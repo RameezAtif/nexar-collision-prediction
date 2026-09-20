@@ -1,6 +1,6 @@
 # Dataset
 data/raw/
-data/processed/
+
 
 # Python
 __pycache__/
