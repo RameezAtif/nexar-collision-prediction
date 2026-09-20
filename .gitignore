@@ -1,0 +1,26 @@
+# Dataset
+data/raw/
+data/processed/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environment
+.venv/
+venv/
+
+# Model outputs
+*.pt
+*.pth
+*.ckpt
+
+# Experiment outputs
+results/checkpoints/
+results/logs/
+
+# OS
+.DS_Store
