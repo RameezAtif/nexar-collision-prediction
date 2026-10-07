@@ -1,0 +1,4 @@
+model,tte,AP,ROC_AUC,Precision,Recall,F1
+optical_flow_scaled,0.5,0.574508,0.588711,0.543307,0.46,0.498195
+optical_flow_scaled,1.0,0.575785,0.591511,0.530303,0.466667,0.496454
+optical_flow_scaled,1.5,0.568349,0.573911,0.544118,0.493333,0.517483
