@@ -5,7 +5,7 @@ Written so that someone (or a future session) can pick the project up without re
 
 - **Spec:** `200notok_proposal.tex` (COMS4036A, Compare/Probe). It wins over the README and any informal notes where they disagree.
 - **Long-form background / dataset notes:** `README.md` (its "current status" sections are stale, see §7 item 5).
-- **Last updated:** 2026-10-07, after notebooks 07 (final analysis) and 08 (failure analysis).
+- **Last updated:** 2026-10-07, after notebooks 07-09 (final analysis, failure analysis, id-block confound tests).
 
 ---
 
@@ -221,6 +221,54 @@ It first retrains the 3 CNN models with the identical protocol (5 seeds) to reco
 
 **Dataset-structure finding (important):** across all 1,500 labelled videos, **every collision video has id <= 1039 and every normal video has id >= 1040** (zero overlap; 729 of 750 positives are below 1000). The models never see the id (they receive only ResNet activations; the id only locates the video file), so no reported number is invalid. But the two classes were evidently assembled in separate blocks. If the blocks differ in camera, device, region, time of day or recording batch, a classifier can score well by recognising that, which is consistent with the strong static-frame result. It **cannot be confirmed or ruled out without the raw videos**.
 
+### E8 - Is the id-block structure a confound? Feature-based tests (notebook 09) - DONE, inconclusive but suggestive
+**Why:** E7 found that video id perfectly separates the classes. The direct check needs the raw videos, which are **not on this machine** (searched `D:`, Downloads, Documents, Desktop; no Kaggle credentials either). This notebook does what the cached ResNet features allow, and `tools/compare_id_blocks.py` (below) is the direct check for wherever the dataset is.
+**Method:** all 1,500 labelled videos, one clip each at TTE 1.0 s, mean-pooled ResNet features, regularised logistic regression, **out-of-fold** scores (10-fold), so no video is scored by a model that saw it. Collision-vs-normal out-of-fold AUC = 0.72.
+
+| Test | Prediction if features encode an id-ordered recording batch | Result |
+|---|---|---|
+| A. Within one class, predict lower vs upper id half | above chance | collision AUC 0.563 (shuffled-label 95th pct 0.522); normal AUC 0.501 (null 0.54) |
+| B. Boundary groups (21 collisions with id 1000-1039; 40 normals with id 1040-1099) | shift toward the neighbouring class | collisions -0.078 (CI -0.17..+0.02, p=0.10); normals +0.055 (CI -0.02..+0.13, p=0.15). Right direction, not significant |
+| C. Within-class trend of the score along id | monotone drift | collision: Spearman -0.128, permutation p = 0.0005 (mean score 0.64 -> 0.57 from lowest to highest id quartile); normal: -0.058, p = 0.10 |
+| D. Class separation (AUC) near the boundary vs far | lower near the boundary | AUC 0.594 within +/-100 ids vs 0.730 farther away (diff -0.136, 95% CI -0.236..-0.036); +/-200 and +/-300 windows agree (CIs exclude 0) |
+
+**Reading:** consistent with the features carrying some information about *position in the id ordering* in addition to collision content: the score drifts down with id and the classes become harder to separate where their ids are close. Not the whole story (the classes are still separable far from the boundary, AUC 0.73; the within-class drift is about 0.07 vs a class gap of about 0.2). It does **not** identify what changes with id, and an effect that is constant within each class would pass every test; ids could also be ordered by something event-related (e.g. severity). Evidence the confound is plausible, not proof.
+Outputs: `results/id_block_test_{a,b,c,d}_*.csv`, `results/id_block_test_c_id_quartiles.csv`, `results/figures/id_block_fig1_scores_by_id.png`.
+
+**Raw-video tool (`tools/compare_id_blocks.py`).** For every available labelled video it measures resolution, fps, duration, bitrate, brightness, contrast, dark-pixel share, saturation and sharpness (3 sampled frames), then reports per-property medians by class, the single-property AUC for predicting the class, within-class id drift, a property-only classifier (class and id-half, with a shuffled-label baseline), a properties-vs-id figure and contact sheets. Run: `python tools/compare_id_blocks.py` from the project root with `data/raw/train/{id:05d}.mp4` present (`--available-only` for a partial download, `--limit 60` for a quick check, `--raw PATH` if the videos live elsewhere). Its results are E9.
+
+### E9 - Raw-video comparison of the id blocks (`tools/compare_id_blocks.py`) - DONE on a 431-video sample
+**Data:** the raw videos were downloaded on 2026-10-07 through the Kaggle REST API (the account token was supplied by the user; the CLI available for Python 3.10, 1.7.4.5, does not read the newer `access_token` file, so a small downloader was used; it lives only in the scratchpad, not in the repo). **Only a sample was downloaded (7.4 GB of the 25.5 GB train set):** all 61 videos next to the boundary (21 collisions with id 1000-1039, 40 normals with id 1040-1099), all 71 persistent-error videos, and 150 random collision + 150 random normal videos; 431 with `00000.mp4` from the probe (206 collision, 225 normal). All file sizes match Kaggle's listing. The videos are in `data/raw/train/` (gitignored). Test videos and the remaining ~1,070 train videos were not downloaded (disk: `D:` had 47 GB free).
+
+| Check | Result |
+|---|---|
+| Resolution, frame rate, duration | identical: every video is 1280x720; fps about 30 (21 distinct values around 30); duration about 40 s in both classes (a short cluster near 18-19 s in both: 10% of collisions, 16% of normals) |
+| Single-property AUC for the class (10 properties) | all within 0.46-0.56 (largest: sharpness 0.563, duration 0.556); none passes the |AUC - 0.5| > 0.15 threshold |
+| Day/night, brightness, contrast, saturation | similar in both classes (luminance median 98 vs 95; both bimodal day/night) |
+| Property-only classifier (gradient boosting, 5-fold CV) | class: AUC 0.579 vs shuffled-label mean 0.49 (max 0.61), i.e. not distinguishable from chance. Id half within collision: 0.604 (null max 0.67); within normal: 0.603 (null max 0.60) |
+| Overlay (Nexar logo top-left, "GETNEXAR.COM" badge top-right) | present on videos from every id range in both classes (36 top-strip crops checked); not a block difference. One normal video (id 1988) also has a burned-in dashcam date stamp |
+| Weak id-ordered traces | bitrate rises with id inside the collision block (Spearman +0.241, p = 0.0005); duration rises with id inside the normal block (+0.176, p = 0.008). Boundary groups do not differ significantly (bitrate medians: collision <1000 3,494; collision 1000-1039 4,055; normal 1040-1099 3,894; normal >=1100 3,671 kbit/s; Mann-Whitney p = 0.38, 0.29, and 0.98 for boundary-collision vs boundary-normal) |
+| Contact sheets (`results/id_blocks/contact_sheet_*.png`, 12 persistent-error videos viewed) | Both blocks are the same kind of footage: US dashcam, urban/suburban/highway, day and night. Persistent false alarms are mostly dense night city traffic with a vehicle close ahead (ids 1344, 1694, 1950, 1295); persistent misses are rain, overcast, overexposed or empty-road scenes (362, 403, 457). Qualitative, from a dozen videos. |
+
+**Reading:** no simple recording property, format or overlay separates the two id blocks, and these properties together do not predict the class above chance, so a *device / format / watermark* confound is not supported at the level measured. A small id-ordered drift exists (bitrate, duration) and the feature tests (E8) also saw one, but it is weak and not explained by these properties. What remains possible, and cannot be tested with these measurements, is a difference in **scene content** between blocks (location, season, traffic density, collection period). The error examples hint that the model keys on scene context (dense, close-following night traffic reads as risky), which would make it a "risky-looking scene" detector rather than an imminent-collision detector; that is a hypothesis from a handful of videos, not a result.
+**Limits:** a sample of 431 of 1,500 videos (the boundary groups and error videos are complete); sampled frames at 25/50/75% of each video; 10 simple properties.
+Outputs: `results/id_blocks/` (`video_properties.csv`, `block_comparison.csv`, `property_classifier.csv`, `properties_by_id.png`, three contact sheets).
+
+### E10 - Which CNN+LSTM estimate is closer to the truth? Full-data, no-selection check (`tools/fulldata_selection_check.py`) - DONE
+**Why:** the partner's analysis reports notebook 05's numbers; this log reports notebook 06's clean-protocol numbers. Notebook 06 uses only 80% of the training videos, so part of the gap could be lost training data rather than selection bias. This isolates the two.
+**Method:** same CNN+LSTM, **all** training clips, fixed 10 epochs, 5 seeds, validation AP recorded each epoch.
+
+| CNN+LSTM AP | 0.5 s | 1.0 s | 1.5 s |
+|---|---|---|---|
+| Notebook 05 as reported (best epoch picked on the evaluation videos, 1 seed) | 0.793 | 0.774 | 0.739 |
+| Same protocol, 5-seed mean of the per-run best epoch ("oracle") | 0.793 | 0.780 | 0.742 |
+| **Full data, fixed 10 epochs, no selection** (mean ± std, 5 seeds) | 0.754 ± 0.015 | 0.753 ± 0.009 | 0.676 ± 0.021 |
+| Mean over epochs 1-10 (no selection, all epochs) | 0.778 | 0.765 | 0.714 |
+| **Notebook 06 clean protocol** (80% data, epoch chosen on an inner split) | 0.762 | 0.749 | 0.675 |
+
+**Reading:** selection on the evaluation videos inflates AP by about 0.039 / 0.027 / 0.066 (oracle minus no-selection); losing 20% of the training data costs essentially nothing (clean 0.762 / 0.749 / 0.675 vs no-selection 0.754 / 0.753 / 0.676). So the notebook-06 numbers are a sound estimate and notebook 05's are optimistic. The inflation is **not uniform**: it is largest at 1.5 s, so the optimistic numbers also flatten the degradation curve (0.5 s to 1.5 s drop: 0.054 optimistic vs about 0.08 clean). Caveat: validation AP peaks around epochs 3-5 (mean best epoch 4.6 / 3.2 / 3.0) and is lower at epoch 10, so a fixed 10-epoch schedule is itself slightly conservative; a properly tuned epoch count (chosen on held-out training data, not the evaluation set) could land between the two, but not at the optimistic level.
+Outputs: `results/selection_check_fulldata.csv` (per run).
+
 ---
 
 ## 4. Findings so far (test set = the 300 held-out videos, descriptive, not final conclusions)
@@ -235,8 +283,10 @@ It first retrains the 3 CNN models with the identical protocol (5 seeds) to reco
 7. **The signal is mostly static (E7).** A single frame from 3+ s before the event gives AP about 0.70; frames near the event add only about +0.05. So the model is largely not detecting an imminent-collision cue.
 8. **A hazard-related component exists but is smaller (E7).** Positives whose clip ends after the annotated alert are detected better (AUC about 0.72-0.77) than those ending before it (about 0.62-0.66).
 9. **Video id perfectly separates the classes (E7)** (collision <= 1039, normal >= 1040). Models do not use it, but the blocks may differ in recording conditions, which would partly explain finding 7. Unverified without the raw videos.
+10. **The id structure leaves a visible trace in the features (E8).** Collision score drifts down with id within the collision block (rho -0.128, p = 0.0005), and class separation is weaker near the id boundary (AUC 0.59 vs 0.73). Moderate evidence that part of the signal is id-ordered recording/collection structure; cause unknown until the raw videos are compared.
+11. **The raw videos show no device/format/overlay difference between the id blocks (E9).** Same resolution, fps, duration, overlay and day/night mix; simple properties do not predict the class (AUC 0.58, inside the shuffled-label range). A scene-content difference between blocks remains possible and untested; error examples suggest the model keys on dense, close-following traffic scenes.
 
-Suggested wording for the report: *"Pretrained CNN features separate the collision and normal videos substantially better than optical flow at every horizon. A single-frame ablation shows this comes mainly from the visual representation rather than from temporal modelling, and a frame-position analysis shows much of the signal is present well before the event, so the model should not be described as detecting imminent collisions. A dataset-structure caveat (class-specific id blocks) is noted as a limitation."*
+Suggested wording for the report: *"Pretrained CNN features separate the collision and normal videos substantially better than optical flow at every horizon. A single-frame ablation shows this comes mainly from the visual representation rather than from temporal modelling, and a frame-position analysis shows much of the signal is present well before the event, so the model should be described as recognising high-risk driving scenes, not as detecting imminent collisions. The two classes occupy disjoint video-id blocks; we found no difference in resolution, frame rate, duration or overlay between blocks, but a scene-content difference between blocks cannot be excluded."*
 
 ---
 
@@ -259,7 +309,7 @@ Suggested wording for the report: *"Pretrained CNN features separate the collisi
 
 ## 6. Known issues / caveats
 
-- **Class-specific video-id blocks (E7).** Collision ids <= 1039, normal ids >= 1040. Not used by any model, but a possible recording-batch confound; the headline results should not be worded as "predicts collisions" without this caveat. Needs the raw videos to check.
+- **Class-specific video-id blocks (E7-E9).** Collision ids <= 1039, normal ids >= 1040. Not used by any model. Features show an id-ordered trace (E8); raw videos (E9, a 431-video sample) show no resolution/fps/duration/overlay/brightness difference between blocks and the simple properties do not predict the class, but scene content (location, season, traffic) could still differ and was not tested. Report this as a limitation.
 - **Test set is a relabelled validation set.** The 300 videos were never used for selection in notebook 06, but earlier notebooks (04/05) reported on them and the scaled-flow variant was chosen by looking at them. No separate untouched set exists.
 - **Single backbone, frozen features, one clip configuration** (16 frames over 2 s). Conclusions about temporal modelling apply to this setup only.
 - **Small val set.** Differences of about 0.03 AP are near the noise floor; a single AP has a 95% interval of about +/-0.07.
@@ -274,7 +324,7 @@ Suggested wording for the report: *"Pretrained CNN features separate the collisi
 
 ## 7. Open items / next steps (priority order)
 
-1. **Investigate the class-id-block confound** (highest priority, needs the raw videos). Compare collision (id <= 1039) vs normal (id >= 1040) videos on resolution, frame rate, duration, brightness/time of day, camera view, and look at sample frames and the persistent-error ids in `results/failure_persistent_errors.csv`. Outcome decides how strongly the report can claim anything beyond "separates the two video groups".
+1. **Optional extension of E9:** the sample covers 431 of 1,500 train videos. If more certainty is wanted, download the rest (about 18 GB, `D:` has about 40 GB free) and rerun `python tools/compare_id_blocks.py`; or quantify the scene-content hypothesis (e.g. traffic density / lead-vehicle proximity proxies on the persistent-error videos). Not required for the project.
 2. **README refresh:** sections 52-54 still say baselines are the "next stage"; there is no `src/`, `requirements.txt` or experiment config yet. Update, and fill in the reproducibility checklist (README §76).
 3. **Report writing**, using notebook 06/07 numbers, the figures in `results/figures/final_fig*.png`, and the wording and caveats in §4. Cover: RQ1 (horizon), RQ2 (learned vs classical), RQ3 (temporal ablation), hypothesis not supported, id-block caveat, notebook-05 optimism.
 4. **Optional, only if time allows:** GRU instead of LSTM (proposal allows "GRU/LSTM or similar"); dropout / weight decay (overfitting is evident); find which clip was dropped at TTE 1.5; a stronger generalisation test that holds out id blocks (only meaningful if the raw videos show the blocks are comparable).
@@ -296,6 +346,8 @@ notebooks/05               # ResNet-18 features + CNN+LSTM (data/processed/cnn_f
 notebooks/06               # ablation, 5 seeds, bootstrap  (results/temporal_ablation_*.csv, results/figures/*)
 notebooks/07               # final figures/tables from the notebook-06 CSVs (no training)
 notebooks/08               # failure analysis; retrains the CNN models (about 3 min on CPU)
+notebooks/09               # id-block confound tests on the cached features (under 1 min)
+tools/compare_id_blocks.py # raw-video block comparison (only where data/raw/train exists)
 ```
 
 Notebook 06 only needs the cached features and flow arrays (no raw videos), and runs in about 1.5 min on CPU for 10 epochs (about 4 min for 30).
@@ -317,6 +369,8 @@ Model checkpoints (`*.pt`) are gitignored; notebook 05 writes them to `results/`
 | `notebooks/06_temporal_ablation.ipynb` | E4/E5: ablation, seeds, bootstrap, findings |
 | `notebooks/07_final_analysis.ipynb` | E6: final figures, tables, hypothesis check (reads CSVs, no training) |
 | `notebooks/08_failure_analysis.ipynb` | E7: frame-position, alert-timing, shortcut and error analysis |
+| `notebooks/09_id_block_confound.ipynb` | E8: feature-based tests of the id-block confound |
+| `tools/compare_id_blocks.py` | Raw-video comparison of the two id blocks (needs the dataset; untested on real data) |
 | `results/baseline_results.csv` | Naive + scaled flow (final baselines) |
 | `results/cnn_lstm_results.csv`, `baseline_and_cnn_lstm_results.csv` | Notebook 05 results (superseded) |
 | `results/temporal_ablation_runs.csv` | Every run (variant x TTE x seed), 10 ep |
@@ -328,12 +382,15 @@ Model checkpoints (`*.pt`) are gitignored; notebook 05 writes them to `results/`
 | `results/val_predictions.csv` | Per-clip test probabilities (CNN+LSTM, last-frame, mean-pool, flow) at all TTEs |
 | `results/failure_*.csv` | Frame-position AP, alert-timing AUC, metadata shortcuts, error-by-position, persistent errors (E7) |
 | `results/figures/failure_fig{1-3}_*.png` | Failure-analysis figures (E7) |
+| `results/id_block_test_*.csv`, `results/figures/id_block_fig1_scores_by_id.png` | Id-block confound tests (E8) |
 | `results/figures/temporal_ablation_ap_vs_tte[_30ep].png` | AP and recall@FPR vs TTE |
 | `results/figures/temporal_ablation_learning_curves[_30ep].png` | Inner-validation AP per epoch |
 
 ---
 
 ## 10. Corrections to earlier informal notes
+
+- **Partner's parallel final analysis (`origin/main`, commit `6142e6f`, 2026-10-07, "add 06 final analysis").** Adds `notebooks/06_final_analysis_results.ipynb` and `results/final_analysis/` (plots and CSVs for AP, ROC-AUC, precision/recall/F1 vs TTE). It hard-codes the **unscaled** optical-flow numbers (0.582 / 0.569 / 0.568) and the **notebook-05** CNN+LSTM numbers (0.793 / 0.774 / 0.739) as the primary results, so its headline figures and "CNN minus flow = 0.211 / 0.205 / 0.171" differ from this log's clean-protocol numbers (CNN+LSTM 0.762 / 0.749 / 0.675 vs scaled flow 0.575 / 0.576 / 0.569). It also modifies `03_clip_sampling.ipynb` cosmetically (stripped stray instruction text, added a split-saving cell, a validation-invalid check, a protocol write-up and stored outputs; code and the split CSVs are unchanged). It explains the 1,199 train clips at TTE 1.5: **one positive training video was too short for the 2-second window at that TTE and was excluded**. No file overlaps with the analysis branch (a merge dry run is conflict-free), but the two sets of final results must be reconciled before the report: use one baseline definition and the clean-protocol CNN+LSTM numbers. Notebook numbering also clashes (his 06 vs `06_temporal_ablation`).
 
 - Optical-flow figures quoted as 0.5821 / 0.5692 / 0.5680 are the **unscaled** variant; the repo's final baseline is **scaled** (0.5745 / 0.5758 / 0.5683).
 - "Inference time" and "environment breakdown" were described as proposal items; the proposal lists neither as a requirement (metadata is optional failure analysis only).
