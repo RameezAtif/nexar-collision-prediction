@@ -1,0 +1,3 @@
+class,n,AUC_lower_vs_upper_id_half,shuffled_label_AUC_mean,shuffled_label_AUC_95th_pct,"Spearman(id, score)"
+collision videos,750,0.5630151111111111,0.48028871111111116,0.5221408,0.09668026432046987
+normal videos,750,0.50112,0.4922699851851852,0.5412864,-0.00012460111040197406
