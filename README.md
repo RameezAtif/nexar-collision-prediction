@@ -99,11 +99,17 @@ Notebooks can also be opened in Jupyter directly; each starts by moving to the p
 
 ### 6. Build the report (needs LaTeX or Docker)
 
+The report is `report/main.tex` (IEEE conference format; the class and bibliography style are included in `report/`). Its figures and tables are generated from the result files by `tools/make_report_assets.py`.
+
 ```text
-docker run --rm -v "%cd%/report:/work" -w /work texlive/texlive:latest-medium sh -c "pdflatex main && bibtex main && pdflatex main && pdflatex main"
+python tools/make_report_assets.py       # figures and tables -> report/figures, report/tables
+cd report
+sh build.sh                              # builds report/main.pdf with Docker (image texlive/texlive:latest-medium)
 ```
 
-(macOS/Linux: replace `%cd%` with `$(pwd)`.) The output is `report/main.pdf`.
+On Windows Git Bash use `MSYS_NO_PATHCONV=1` and `$(pwd -W)` in `build.sh`, or compile `report/main.tex` with any LaTeX installation (pdflatex, bibtex, pdflatex, pdflatex).
+
+**Verified:** a fresh `git clone` of this branch, with no raw data, ran notebooks 06-09 with `python tools/run_notebooks.py` and regenerated all 24 result CSVs identically (difference below 1e-9) to the committed ones on the same machine.
 
 ### 7. Data attribution and licence
 
