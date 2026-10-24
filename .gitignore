@@ -28,8 +28,6 @@ results/logs/
 The project*Computer Vision*
 conference-latex-template.zip
 
-# Slides: extracted dataset frames and the built deck stay out of git (dataset licence: no raw-data redistribution)
-slides/frames/
-slides/work/
-slides/*.pptx
-slides/_render/
+# Written report and presentation: submitted separately, kept out of the repository
+report/
+slides/
