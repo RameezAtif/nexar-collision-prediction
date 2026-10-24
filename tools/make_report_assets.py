@@ -8,7 +8,7 @@ Every number in the report's tables and figures comes from the files read here, 
     results/failure_alert_timing.csv           AUC of positives before / after the annotated alert   (notebook 08)
 
 Usage (from the project root):  python tools/make_report_assets.py
-Writes report/figures/*.pdf and report/tables/*.tex.
+Writes report/figures/*.pdf and report/tables/*.tex (a local folder; the report itself is submitted separately and is not tracked in git).
 """
 
 from pathlib import Path
