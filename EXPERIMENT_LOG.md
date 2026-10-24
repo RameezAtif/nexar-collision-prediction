@@ -4,7 +4,7 @@ A running record of what has been tried in this project, why, what came out, and
 Written so that someone (or a future session) can pick the project up without re-deriving anything.
 
 - **Spec:** `200notok_proposal.tex` (COMS4036A, Compare/Probe). It wins over the README and any informal notes where they disagree.
-- **Long-form background / dataset notes:** `README.md` (its "current status" sections are stale, see §7 item 5).
+- **Overview, results and how to run things:** `README.md`. The original long-form design document is `docs/PROJECT_DESIGN.md` (kept for reference).
 - **Last updated:** 2026-10-07, after notebooks 07-09 (final analysis, failure analysis, id-block confound tests).
 
 ---
@@ -331,13 +331,13 @@ Suggested wording for the report: *"Pretrained CNN features separate the collisi
 ## 7. Open items / next steps (priority order)
 
 1. **Optional extension of E9:** the sample covers 431 of 1,500 train videos. If more certainty is wanted, download the rest (about 18 GB, `D:` has about 40 GB free) and rerun `python tools/compare_id_blocks.py`; or quantify the scene-content hypothesis (e.g. traffic density / lead-vehicle proximity proxies on the persistent-error videos). Not required for the project.
-2. **README refresh:** sections 52-54 still say baselines are the "next stage"; there is no `src/`, `requirements.txt` or experiment config yet. Update, and fill in the reproducibility checklist (README §76).
+2. ~~**README refresh**~~ Done 2026-10-24: the README is now a short project overview with results, quick start and reproducibility notes; the old design document moved to `docs/PROJECT_DESIGN.md`.
 3. **Report writing**, using notebook 06/07 numbers, the figures in `results/figures/final_fig*.png`, and the wording and caveats in §4. Cover: RQ1 (horizon), RQ2 (learned vs classical), RQ3 (temporal ablation), hypothesis not supported, id-block caveat, notebook-05 optimism.
 4. **Optional, only if time allows:** GRU instead of LSTM (proposal allows "GRU/LSTM or similar"); dropout / weight decay (overfitting is evident); find which clip was dropped at TTE 1.5; a stronger generalisation test that holds out id blocks (only meaningful if the raw videos show the blocks are comparable).
 
 Done since the last revision: final analysis notebook (E6), failure analysis (E7). The "held-out test split" item is resolved by treating the 300 validation videos as the test set (see §5).
 
-Explicitly **not planned**: transformers, 3D CNNs, other backbones, extra TTE values, fine-tuning the CNN (README lists these as stretch goals only).
+Explicitly **not planned**: transformers, 3D CNNs, other backbones, extra TTE values, fine-tuning the CNN (the design document lists these as stretch goals only).
 
 ---
 
@@ -367,7 +367,8 @@ Model checkpoints (`*.pt`) are gitignored; notebook 05 writes them to `results/`
 | Path | What |
 |---|---|
 | `200notok_proposal.tex` | Project proposal (spec) |
-| `README.md` | Long-form background; status sections are stale |
+| `README.md` | Project overview, results, quick start, reproducibility |
+| `docs/PROJECT_DESIGN.md` | Original long-form design document (reference) |
 | `EXPERIMENT_LOG.md` | This file |
 | `notebooks/01-03` | Exploration, video inspection, clip sampling and split |
 | `notebooks/04_baselines.ipynb` | Naive + optical flow |
