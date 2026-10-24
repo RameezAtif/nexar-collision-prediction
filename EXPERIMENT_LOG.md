@@ -269,6 +269,12 @@ Outputs: `results/id_blocks/` (`video_properties.csv`, `block_comparison.csv`, `
 **Reading:** selection on the evaluation videos inflates AP by about 0.039 / 0.027 / 0.066 (oracle minus no-selection); losing 20% of the training data costs essentially nothing (clean 0.762 / 0.749 / 0.675 vs no-selection 0.754 / 0.753 / 0.676). So the notebook-06 numbers are a sound estimate and notebook 05's are optimistic. The inflation is **not uniform**: it is largest at 1.5 s, so the optimistic numbers also flatten the degradation curve (0.5 s to 1.5 s drop: 0.054 optimistic vs about 0.08 clean). Caveat: validation AP peaks around epochs 3-5 (mean best epoch 4.6 / 3.2 / 3.0) and is lower at epoch 10, so a fixed 10-epoch schedule is itself slightly conservative; a properly tuned epoch count (chosen on held-out training data, not the evaluation set) could land between the two, but not at the optimistic level.
 Outputs: `results/selection_check_fulldata.csv` (per run).
 
+### E11 - Report and reproducibility check (2026-10-24) - DONE
+**Report:** `report/main.tex` -> `report/main.pdf` (IEEE two-column, 4 pages; limit is 6), built with Docker (`report/build.sh`). Figures and tables come from `tools/make_report_assets.py`, which reads only the result CSVs; the numbers typed in the text were checked against those CSVs. The text states the Nexar licence terms and carries an AI-use declaration.
+**Clean checkout:** a fresh clone with no raw data ran notebooks 06-09 via `python tools/run_notebooks.py` and regenerated all 24 result CSVs identically (difference below 1e-9; same machine, Python 3.10). Fixes this needed: notebooks now start by moving to the project root when launched from `notebooks/`, and the runner script was added.
+**Course requirements** (from the project brief): report at most six pages, IEEE two-column, repo link on page 1 and reachable logged out; repo marked on README with setup, data and commands, seeds set, results reproducible from a clean checkout; third-party data licence recorded in the report; AI use declared in the report. Presentation and live Q&A on Tue 27 Oct (every member must be able to explain every part); report due 07:00 Wed 28 Oct.
+**Open before submission:** repo must be public (it is currently private); the working branch must be merged to `main` or linked directly; confirm the AI-use paragraph with Rameez and against the course AI policy.
+
 ---
 
 ## 4. Findings so far (test set = the 300 held-out videos, descriptive, not final conclusions)
