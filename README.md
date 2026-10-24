@@ -32,14 +32,85 @@ The remaining work is the written report.
 
 **Numbers not to cite.** Notebook 05's CNN + LSTM results (AP 0.793 / 0.774 / 0.739) and the partner's `results/final_analysis/` use the best epoch *chosen on the evaluation videos* and the unscaled optical-flow variant. They are optimistic by about 0.04 / 0.03 / 0.07 AP (see `EXPERIMENT_LOG.md`, E3 and E10) and are kept for reference only.
 
-**Quick start**
+**Quick start:** see *Reproducing the results* below.
+
+---
+
+## Reproducing the results
+
+Tested from a fresh `git clone` (no raw data present) on Windows 10, Python 3.10, CPU only. No GPU is needed.
+
+### 1. Setup
 
 ```text
+git clone https://github.com/RameezAtif/nexar-collision-prediction.git
+cd nexar-collision-prediction
+python -m venv .venv
+.venv\Scripts\activate            # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-# Notebooks 06-09 need only data/processed/ (cached features); they do not need the raw videos.
-# Notebooks 01-05 and tools/compare_id_blocks.py need the raw dataset in data/raw/ (section 16).
-# Run notebooks from the project root, in order (notebooks/README.md).
 ```
+
+### 2. Data
+
+| What | Where | In the repo? |
+|---|---|---|
+| Train/validation split, clip definitions, cached ResNet-18 features, optical-flow features | `data/processed/` | **Yes** (small, derived data). Notebooks 06-09 and the report assets run from this alone. |
+| Raw Nexar videos and `train.csv` (about 31 GB in total, 25.5 GB of train videos) | `data/raw/train/*.mp4`, `data/raw/train.csv` | **No** (too large, and not ours to redistribute). Needed only to regenerate `data/processed/` (notebooks 01-05) and for `tools/compare_id_blocks.py`. |
+
+To get the raw data: accept the rules of the Kaggle competition <https://www.kaggle.com/competitions/nexar-collision-prediction/data> (or use the Hugging Face dataset `nexar-ai/nexar_collision_prediction`),
+then place `train.csv` and the `train/` folder under `data/raw/`.
+
+### 3. Commands
+
+```text
+python tools/run_notebooks.py            # notebooks 06, 07, 08, 09 from the committed data (about 5 minutes on a CPU)
+python tools/make_report_assets.py       # report figures and LaTeX tables, from results/*.csv
+python tools/run_notebooks.py --list     # what each notebook needs
+```
+
+With the raw data in `data/raw/` (slow: feature extraction takes hours on a CPU):
+
+```text
+python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model
+python tools/compare_id_blocks.py --available-only      # raw-video comparison of the id blocks (needs only the videos you downloaded)
+python tools/fulldata_selection_check.py                # E10: selection-optimism check
+```
+
+Notebooks can also be opened in Jupyter directly; each starts by moving to the project root if the kernel was launched inside `notebooks/`.
+
+### 4. Seeds and determinism
+
+* Train/validation split and negative sampling: seed 42 (notebook 03), saved once to `data/processed/*.csv` and reused by every model.
+* Model training (notebooks 06, 08): seeds 42, 43, 44, 45, 46, set with `torch.manual_seed` and `numpy.random.seed` before each run.
+* Bootstrap, permutation and shuffling in notebooks 06, 08, 09: fixed seeds (`default_rng`), so the confidence intervals reproduce too.
+* A rerun on the same machine reproduces the committed result files exactly. Across operating systems and library versions, expect small numerical differences (optical-flow baseline: at most 0.0007 AP).
+
+### 5. Where each reported number comes from
+
+| Report item | File | Produced by |
+|---|---|---|
+| Main results table (AP, recall at fixed false-alarm rate), mean ± std over 5 seeds | `results/temporal_ablation_summary.csv` | notebook 06 |
+| Paired bootstrap confidence intervals | `results/temporal_ablation_bootstrap.csv` | notebook 06 |
+| Single-frame AP by frame position | `results/failure_frame_position_ap.csv` | notebook 08 |
+| Annotated-alert timing analysis | `results/failure_alert_timing.csv` | notebook 08 |
+| Video-id block tests | `results/id_block_test_*.csv`, `results/id_blocks/*.csv` | notebook 09, `tools/compare_id_blocks.py` |
+| Selection-optimism check (notebook 05 vs clean protocol) | `results/selection_check_fulldata.csv` | `tools/fulldata_selection_check.py` |
+| Report tables and figures | `report/tables/*.tex`, `report/figures/*.pdf`, `report/tables/numbers_quoted_in_text.csv` | `tools/make_report_assets.py` |
+
+### 6. Build the report (needs LaTeX or Docker)
+
+```text
+docker run --rm -v "%cd%/report:/work" -w /work texlive/texlive:latest-medium sh -c "pdflatex main && bibtex main && pdflatex main && pdflatex main"
+```
+
+(macOS/Linux: replace `%cd%` with `$(pwd)`.) The output is `report/main.pdf`.
+
+### 7. Data attribution and licence
+
+This project uses the **Nexar Dashcam Collision Prediction Dataset**: D. C. Moura, S. Zhu and O. Zvitia, "Nexar Dashcam Collision Prediction Dataset and Challenge," CVPR Workshops 2025, pp. 2608-2616 (Nexar Inc.).
+It is released under the Nexar open data licence, which permits free use, copying and redistribution **with attribution to Nexar Inc. and the copyright notice retained**, and prohibits resale, attempts to re-identify people or vehicles,
+weapons use, and building systems intended to cause harm. This repository holds only derived data (labels, event times, clip windows, features) and a few small contact sheets of example frames, with this attribution; it contains no raw videos.
+Licence text: <https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction/blob/main/LICENSE>.
 
 ---
 

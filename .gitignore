@@ -24,3 +24,6 @@ results/logs/
 
 # OS
 .DS_Store
+# Course materials (brief and report template): not ours to redistribute
+The project*Computer Vision*
+conference-latex-template.zip
