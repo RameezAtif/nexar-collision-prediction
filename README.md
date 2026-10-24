@@ -5,7 +5,7 @@ A controlled comparison on the [Nexar](https://huggingface.co/datasets/nexar-ai/
 
 COMS4036A Computer Vision, University of the Witwatersrand · Muhammad Hoosen (2552770) · Rameez Atif (2612521)
 
-**Quick links:** [Report (PDF)](report/main.pdf) · [Experiment log](EXPERIMENT_LOG.md) · [Notebook guide](notebooks/README.md) · [Original design document](docs/PROJECT_DESIGN.md)
+**Quick links:** [Experiment log](EXPERIMENT_LOG.md) · [Notebook guide](notebooks/README.md) · [Original design document](docs/PROJECT_DESIGN.md)
 
 ---
 
@@ -66,8 +66,7 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 | Command | What it does | Needs raw data |
 |---|---|:---:|
 | `python tools/run_notebooks.py` | Runs notebooks 06–09 and rewrites the files in `results/` | no |
-| `python tools/make_report_assets.py` | Builds the report's figures and tables from `results/*.csv` | no |
-| `cd report && sh build.sh` | Builds `report/main.pdf` with Docker (or compile `report/main.tex` with any LaTeX) | no |
+| `python tools/make_report_assets.py` | Generates the figures and LaTeX tables used in the written report from `results/*.csv` (writes to a local, untracked `report/` folder) | no |
 | `python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model` | Regenerates the splits, flow features and ResNet features (slow: hours on a CPU) | yes |
 | `python tools/compare_id_blocks.py --available-only` | Raw-video comparison of the two video-id blocks | yes |
 | `python tools/fulldata_selection_check.py` | Quantifies the cost of choosing the epoch on the test videos | no |
@@ -85,8 +84,6 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
 ├── tools/                   run_notebooks.py, make_report_assets.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
-├── report/                  IEEE-format report: main.tex, main.pdf, figures/, tables/
-├── slides/                  scripts and Q&A notes for the presentation
 └── docs/PROJECT_DESIGN.md   original long-form design document
 ```
 
@@ -111,7 +108,7 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 | Single-frame AP by frame position; annotated-alert timing | `results/failure_frame_position_ap.csv`, `results/failure_alert_timing.csv` | notebook 08 |
 | Video-id block tests | `results/id_block_test_*.csv`, `results/id_blocks/*.csv` | notebook 09, `tools/compare_id_blocks.py` |
 | Selection-optimism check | `results/selection_check_fulldata.csv` | `tools/fulldata_selection_check.py` |
-| Report tables and figures | `report/tables/*.tex`, `report/figures/*.pdf` | `tools/make_report_assets.py` |
+| Figures and tables of the written report (submitted separately) | generated from the CSVs above | `tools/make_report_assets.py` |
 
 ## Limitations
 
