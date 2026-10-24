@@ -6,6 +6,43 @@ Computer Vision Project — University of the Witwatersrand
 
 ---
 
+## Current Status (updated 2026-10-24)
+
+> **Where to look.** This README is the long-form design and background document; parts of it describe the *plan* and were written before the experiments.
+> What has actually been run, the numbers, the decisions and the open items are in **`EXPERIMENT_LOG.md`**. A notebook-by-notebook guide is in **`notebooks/README.md`**.
+
+All three required models (naive, optical flow, CNN + LSTM) are implemented and evaluated at TTE = 0.5 / 1.0 / 1.5 s, together with the proposal's secondary temporal ablation.
+The remaining work is the written report.
+
+**Headline results** (notebooks 06 and 07; mean ± std over 5 training seeds; epoch chosen on held-out *training* videos; scored on the 300 held-out videos, which act as the test set):
+
+| Model | AP @ 0.5 s | AP @ 1.0 s | AP @ 1.5 s |
+|---|---:|---:|---:|
+| Naive | 0.500 | 0.500 | 0.500 |
+| Optical flow (scaled) | 0.575 | 0.576 | 0.569 |
+| CNN + LSTM | 0.762 ± 0.019 | 0.749 ± 0.011 | 0.675 ± 0.021 |
+
+**What the experiments show**
+
+* The learned model beats optical flow at every horizon (AP +0.197 / +0.180 / +0.117; all bootstrap 95% CIs exclude zero).
+* **Temporal modelling is not demonstrated.** A classifier on the single last frame matches the LSTM (AP 0.759 / 0.752 / 0.709), as do mean-pooling and an LSTM trained on shuffled frames. The gain over optical flow comes mainly from the pretrained ResNet features.
+* Performance falls with horizon, but only the 0.5 s to 1.5 s drop (0.086 AP, 95% CI 0.03 to 0.14) is distinguishable from zero. The proposal's hypothesis (the learned model degrades more slowly than optical flow) is **not supported**: optical flow is flat only because it is near chance everywhere.
+* Much of the signal is present long before the event (a single frame taken 3+ seconds before it already gives AP about 0.70), so the model is better described as recognising high-risk driving scenes than as detecting imminent collisions.
+* **Dataset caveat.** Video ids perfectly separate the classes (every collision video has id <= 1039, every normal video id >= 1040). No model uses the id. On a 431-video sample no difference in resolution, frame rate, duration, brightness or overlay was found between the id blocks, but a difference in scene content was not tested.
+
+**Numbers not to cite.** Notebook 05's CNN + LSTM results (AP 0.793 / 0.774 / 0.739) and the partner's `results/final_analysis/` use the best epoch *chosen on the evaluation videos* and the unscaled optical-flow variant. They are optimistic by about 0.04 / 0.03 / 0.07 AP (see `EXPERIMENT_LOG.md`, E3 and E10) and are kept for reference only.
+
+**Quick start**
+
+```text
+pip install -r requirements.txt
+# Notebooks 06-09 need only data/processed/ (cached features); they do not need the raw videos.
+# Notebooks 01-05 and tools/compare_id_blocks.py need the raw dataset in data/raw/ (section 16).
+# Run notebooks from the project root, in order (notebooks/README.md).
+```
+
+---
+
 ## 1. Project Overview
 
 This project investigates whether vehicle collisions or near-miss events can be predicted from dashcam video **before the annotated event occurs**.
@@ -424,6 +461,18 @@ The project should be built incrementally.
 
 Not every directory needs to exist immediately.
 
+> **Actual layout (2026-10-24).** `src/` and `experiments/` from the plan above were **not** created: the implementation lives in the notebooks, plus two small scripts in `tools/`.
+>
+> ```text
+> notebooks/    01-09 (see notebooks/README.md; two notebooks are numbered 06)
+> tools/        compare_id_blocks.py (raw-video id-block comparison), fulldata_selection_check.py
+> data/processed/   splits, clip definitions, cached CNN and optical-flow features
+> results/      baseline and model result CSVs, temporal_ablation_*, final_*, failure_*, id_block_*, figures/
+> results/final_analysis/   the partner's analysis (reference only, see its README)
+> EXPERIMENT_LOG.md         running record of experiments, decisions and open items
+> requirements.txt
+> ```
+
 ---
 
 # 10. Data Storage Rules
@@ -584,6 +633,10 @@ Likely future dependencies include PyTorch and torchvision.
 
 Do not add unnecessary packages simply because they might eventually be useful.
 
+> **Update (2026-10-24).** `requirements.txt` now exists and includes PyTorch and torchvision (the CNN + LSTM was implemented), SciPy (bootstrap and
+> rank tests) and Pillow. It lists minimum versions; the exact versions used for notebooks 06-09 are recorded in its header comment.
+> The unscaled optical-flow logistic regression does not converge in 1,000 iterations and its results shift slightly between environments, which is one reason the scaled variant is the reference baseline.
+
 ---
 
 # 16. Dataset Installation
@@ -655,6 +708,14 @@ The notebooks are primarily for:
 * validating individual components.
 
 Reusable final functionality should eventually move into `src/`.
+
+> **Update (2026-10-24).** The pipeline now continues past the baselines:
+>
+> ```text
+> 04_baselines -> 05_learned_temporal_model -> 06_temporal_ablation -> 07_final_analysis -> 08_failure_analysis -> 09_id_block_confound
+> ```
+>
+> A second notebook numbered 06 (`06_final_analysis_results`) is the partner's parallel analysis and is kept for reference. See `notebooks/README.md` for the purpose and status of each notebook.
 
 ---
 
@@ -1675,58 +1736,50 @@ Validation:
 16 frames per clip
 ```
 
+> **Update (2026-10-24).** The list above describes the state when notebook 3 was complete. Since then: negative sampling was frozen and saved
+> (`data/processed/{train,val}_clips.csv`); the naive and optical-flow baselines were built (notebook 04); ResNet-18 features were cached and a CNN + LSTM trained
+> (notebook 05); a temporal ablation with 5 seeds, bootstrap CIs and clean epoch selection was run (notebook 06); final tables and figures were produced (notebook 07);
+> a failure analysis and an investigation of the class-specific video-id blocks were carried out (notebooks 08 and 09). One positive training video was too short for the
+> 2-second window at TTE 1.5 s and is excluded there, so that training set has 1,199 clips.
+
 ---
 
 # 53. Current Stage
 
-The project is currently at:
+As of 2026-10-24:
 
 ```text
-DATA PREPARATION
-       ✓
-VIDEO INSPECTION
-       ✓
-TEMPORAL SAMPLING
-       ✓
+DATA PREPARATION          ✓
+VIDEO INSPECTION          ✓
+TEMPORAL SAMPLING         ✓
+BASELINES                 ✓   (naive, optical flow)
+CNN + LSTM                ✓
+TTE EXPERIMENTS           ✓   (0.5 / 1.0 / 1.5 s, 5 seeds)
+TEMPORAL ABLATION         ✓
+FINAL ANALYSIS            ✓
+FAILURE ANALYSIS          ✓
+ID-BLOCK INVESTIGATION    ✓   (scene content between blocks still untested)
        ↓
-BASELINE DEVELOPMENT
-       ← CURRENT NEXT STAGE
-       ↓
-OPTICAL FLOW
-       ↓
-CNN + TEMPORAL MODEL
-       ↓
-MAIN EXPERIMENTS
+WRITTEN REPORT            ← CURRENT
 ```
 
 ---
 
 # 54. Immediate Next Task
 
-The next notebook should be:
+The next task is the **written report**, built from `EXPERIMENT_LOG.md`, `notebooks/07_final_analysis.ipynb` and `results/figures/final_fig*.png`.
+It should answer the three research questions (horizon, learned vs classical, temporal dependence), state that the proposal's hypothesis is not supported,
+use the clean-protocol numbers (not notebook 05's), and report the video-id block structure as a limitation.
 
-```text
-notebooks/04_baselines.ipynb
-```
-
-Its purpose is to establish the baseline and evaluation pipeline.
-
-It should not immediately implement the full CNN-LSTM.
-
-First establish:
-
-1. validation loading,
-2. negative sampling,
-3. naive prediction,
-4. metric calculation,
-5. baseline reporting,
-6. reproducible result storage.
-
-Then implement optical flow.
+Optional, only if time allows: a GRU in place of the LSTM, dropout or weight decay (the models overfit after a few epochs), extending the raw-video id-block comparison to all 1,500 videos
+or testing scene content, and merging or renumbering the two notebooks numbered 06.
 
 ---
 
 # 55. Recommended Source Architecture
+
+> **Status (2026-10-24): not implemented.** Sections 55 to 65 describe a planned `src/` package and experiment configs. The work was done in notebooks and two scripts in `tools/`
+> instead. Moving the code into `src/` remains an optional refactor and is not needed for the experiments to be reproducible.
 
 Once the notebook implementation stabilises, reusable functions should move into:
 
@@ -2352,6 +2405,20 @@ Continue with:
 
 Do not skip the earlier notebooks unless the corresponding functionality has already been verified.
 
+### Step 11 onwards
+
+After the baselines, continue with:
+
+```text
+05_learned_temporal_model.ipynb      (needs the raw videos to cache ResNet features; the cached features are already in data/processed/cnn_features/)
+06_temporal_ablation.ipynb           (cached features only)
+07_final_analysis.ipynb              (reads the notebook 06 results)
+08_failure_analysis.ipynb            (cached features only)
+09_id_block_confound.ipynb           (cached features only)
+```
+
+Run all notebooks from the project root. `EXPERIMENT_LOG.md` explains what each experiment found and which numbers to use.
+
 ---
 
 # 78. Current Known Good Configuration
@@ -2410,9 +2477,28 @@ Video leakage:
 None detected
 ```
 
+**Additional frozen configuration used by notebooks 05 to 09**
+
+```text
+CNN backbone:               ResNet-18 (ImageNet weights), frozen, final FC removed -> 512-d per frame
+Temporal model:             LSTM, 1 layer, hidden size 128, final hidden state -> linear logit
+Optimiser / loss:           Adam, lr 1e-3, BCE with logits
+Batch size / epochs:        32 / 10
+Seeds (notebook 06 onward): 42, 43, 44, 45, 46
+Epoch selection:            best AP on a stratified 20% inner split of the training videos (seed 42);
+                            the 300 evaluation videos are never used for selection
+Inner split:                960 fit / 240 selection clips per TTE (959 / 240 at TTE 1.5 s)
+Optical flow baseline:      7 motion statistics per frame pair -> 21-d features -> StandardScaler + logistic regression (scaled variant is the reference)
+Metrics:                    AP (primary), ROC-AUC, recall at <=10% and <=20% false-alarm rate, precision / recall / F1 at threshold 0.5
+Uncertainty:                mean ± std over seeds; paired bootstrap 95% CIs (2,000 resamples of the 300 evaluation clips)
+```
+
 ---
 
 # 79. Important Current Decision
+
+> **Resolved (2026-10-24).** Negative prediction-point sampling was reviewed and frozen: the sampled clips are saved once in `data/processed/{train,val}_clips.csv`
+> and every model uses exactly those clips. The text below is kept as the original rationale.
 
 The following is **not yet final**:
 
@@ -2540,36 +2626,13 @@ The experiment is designed to determine that empirically.
 
 # 83. Current Next Step
 
-The immediate next development task is:
+As of 2026-10-24 the experimental work is complete:
 
 ```text
-Notebook 4 — Baselines and Evaluation
+Baselines -> CNN feature extraction -> CNN + LSTM -> TTE experiments -> Temporal ablation -> Final analysis -> Failure analysis
 ```
 
-The next notebook should establish the evaluation machinery before the main deep-learning model is implemented.
+The next step is the written report (see section 54 and `EXPERIMENT_LOG.md`, section 7).
 
-The recommended order is:
-
-```text
-Notebook 4
-    ↓
-Naive baseline
-    ↓
-Finalise negative sampling
-    ↓
-Optical-flow baseline
-    ↓
-Evaluation framework
-    ↓
-CNN feature extraction
-    ↓
-CNN + LSTM/GRU
-    ↓
-TTE experiments
-    ↓
-Temporal ablation
-    ↓
-Final analysis
-```
-
-This README should be treated as the project's current technical handoff document. Whenever the experimental protocol changes, the README should be updated so that it remains consistent with the actual implementation.
+This README should be treated as the project's background and design handoff document, with the **Current Status** section at the top and `EXPERIMENT_LOG.md` as the source of truth for results.
+Whenever the experimental protocol changes, both should be updated so that they remain consistent with the actual implementation.
