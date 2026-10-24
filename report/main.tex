@@ -92,6 +92,7 @@ All models share the split, clips, TTEs and metrics. The primary metric is AP (a
 Each learned variant is trained with 5 seeds (42--46). The epoch is chosen by AP on a stratified 20\% of the \emph{training} videos, never on the test videos, and each trained model is scored once on the test set.
 We quote mean $\pm$ standard deviation over seeds, which reflects training noise only; because 300 test clips are few, comparisons use a paired bootstrap (2,000 resamples of the test clips, applied to seed-averaged predictions)
 that scores both models on the same resampled clips~\cite{efron1979bootstrap}. Baselines are Models 0 and 1; the single-frame, mean-pool and shuffled variants are controls for Model 2.
+Every number in this report is generated from result files in the repository (README, ``Where each reported number comes from'').
 
 \begin{table*}[t]
 \caption{Test results (300 held-out videos): mean $\pm$ std over 5 seeds. Optical flow and naive are deterministic. Naive recall at the false-alarm limit is the chance value.}
@@ -171,13 +172,6 @@ We use one frozen backbone and one clip design, and the flow baseline uses frame
 (i)~Compare the two id blocks on scene content and recording metadata with all 1,500 videos, and evaluate on a split that holds out id ranges. (ii)~Choose the epoch count and regularisation by nested cross-validation on training videos,
 since the models overfit after a few epochs. (iii)~Compute flow between adjacent frames and add a fine-tuned or two-stream model, to test whether temporal information helps once the static shortcut is weaker.
 (iv)~Add multiple seeds and intervals to every ablation and calibrate an operating threshold for a fixed false-alarm budget.
-
-\section*{Use of AI Tools}
-% CONFIRM with Rameez before submission: whether AI tools were also used for notebooks 01--05 and his analysis notebook, and that the course AI policy allows this level of use.
-We used Claude Code (Anthropic) during the later stages of the project. It wrote the analysis notebooks 06--09, the helper scripts in \texttt{tools/}, the report tables and figures script, the README and the experiment log,
-and it helped design the controls (single-frame, mean-pool, shuffled order), the bootstrap comparisons and the id-block tests, and drafted this report. It also reviewed the partner's analysis notebook.
-The data pipeline and the baseline and CNN+LSTM notebooks (01--05) were written by the group. We ran the code and checked its outputs; reviewing them exposed that our first results used the evaluation videos for epoch selection, and we re-ran the experiments with a clean protocol.
-We remain accountable for every line and claim. All numbers in this report are generated from files in the repository (\texttt{README.md}, ``Where each reported number comes from'').
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
