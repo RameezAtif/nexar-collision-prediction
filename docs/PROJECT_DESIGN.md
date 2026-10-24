@@ -1,3 +1,8 @@
+> **Original design document (kept for reference).** This is the long-form plan written before the experiments; parts of it describe intended structure that was not built (for example `src/`).
+> For the current state, results and how to run things, see the [README](../README.md) and [EXPERIMENT_LOG.md](../EXPERIMENT_LOG.md).
+
+---
+
 # Predicting Vehicle Collisions from Dashcam Video
 
 ## Anticipating the Crash — A Temporal Analysis
