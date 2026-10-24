@@ -88,28 +88,76 @@ fig.tight_layout(pad=0.4, w_pad=1.2)
 fig.savefig(OUT_FIG / "fig_main.pdf")
 plt.close(fig)
 
-# ---------------------------------------------------------------- Figure 2: paired differences (forest plot)
-rows = [("optical_flow", "vs optical flow"), ("last_frame", "vs last frame only"), ("mean_pool", "vs mean-pool (no order)"),
-        ("lstm_train_shuffled", "vs LSTM, shuffled train+test"), ("lstm_test_shuffled", "vs LSTM, shuffled at test")]
+# ---------------------------------------------------------------- Figure 2: paired differences (single-panel forest plot)
+rows = [("optical_flow", "optical flow"), ("last_frame", "last frame only"), ("mean_pool", "mean-pool (no order)"),
+        ("lstm_train_shuffled", "LSTM, shuffled train+test"), ("lstm_test_shuffled", "LSTM, shuffled at test only")]
 NAME = {"optical_flow": "Optical flow", "last_frame": "Last frame (no temporal)", "mean_pool": "Mean-pool (no order)",
         "lstm_train_shuffled": "LSTM, shuffled train+test", "lstm_test_shuffled": "LSTM, shuffled at test only"}
-fig, axes = plt.subplots(1, 3, figsize=(3.45, 2.1), sharex=True, sharey=True)
-ys = np.arange(len(rows))[::-1]
-for ax, tte in zip(axes, TTES):
-    ax.axvline(0, color=INK2, ls=(0, (2, 2)), lw=0.9)
-    for y, (variant, _) in zip(ys, rows):
+fig, ax = plt.subplots(figsize=(3.45, 2.5))
+ax.axvline(0, color=INK2, ls=(0, (2, 2)), lw=0.9)
+offsets = {0.5: 0.24, 1.0: 0.0, 1.5: -0.24}
+markers = {0.5: "o", 1.0: "^", 1.5: "s"}
+for k, (variant, _) in enumerate(rows):
+    y0 = len(rows) - 1 - k
+    for tte in TTES:
         r = boot[(boot["comparison"] == f"AP diff: CNN+LSTM − {NAME[variant]}") & (boot["tte"] == tte)].iloc[0]
         sig = bool(r["excludes_zero"])
-        ax.errorbar(r["estimate"], y, xerr=[[r["estimate"] - r["ci_low"]], [r["ci_high"] - r["estimate"]]], fmt="o", ms=3.8,
-                    color=BLUE if sig else GREY, mfc=BLUE if sig else "white", mew=1, capsize=1.5, elinewidth=1)
-    ax.set_title(f"{tte} s", fontsize=7.5)
-    ax.set_yticks(ys)
-    ax.set_yticklabels([lbl for _, lbl in rows], fontsize=6)
-    ax.grid(axis="y", visible=False)
-    ax.tick_params(axis="x", labelsize=6)
-axes[1].set_xlabel("AP difference: CNN+LSTM minus comparison", fontsize=6.5)
-fig.tight_layout(pad=0.3, w_pad=0.4)
+        ax.errorbar(r["estimate"], y0 + offsets[tte], xerr=[[r["estimate"] - r["ci_low"]], [r["ci_high"] - r["estimate"]]],
+                    fmt=markers[tte], ms=3.6, color=BLUE if sig else GREY, mfc=BLUE if sig else "white", mew=0.9, capsize=1.2, elinewidth=0.9)
+ax.set_yticks(range(len(rows)))
+ax.set_yticklabels([lbl for _, lbl in rows][::-1])
+ax.grid(axis="y", visible=False)
+ax.set_xlabel("AP difference: CNN+LSTM minus comparison")
+from matplotlib.lines import Line2D
+ax.legend(handles=[Line2D([], [], marker=markers[t], color=INK2, ls="", ms=3.6, label=f"TTE {t} s") for t in TTES],
+          loc="lower right", fontsize=6, handletextpad=0.2, borderaxespad=0.2)
+fig.tight_layout(pad=0.3)
 fig.savefig(OUT_FIG / "fig_paired.pdf")
+plt.close(fig)
+
+# ---------------------------------------------------------------- Figure: clip construction (timeline)
+fig, ax = plt.subplots(figsize=(3.45, 1.75))
+ALERT = -1.6   # mean annotated lead time of the alert before the event (seconds)
+for k, tte in enumerate(TTES):
+    y = len(TTES) - 1 - k
+    end = -tte
+    ax.add_patch(plt.Rectangle((end - 2.0, y - 0.28), 2.0, 0.56, color=BLUE, alpha=0.18, lw=0))
+    ax.vlines(np.linspace(end - 2.0, end, 16), y - 0.28, y + 0.28, color=BLUE, lw=0.5)
+    ax.plot([end], [y], marker="v", color=INK, ms=4)
+    ax.annotate(f"TTE {tte} s", (end - 2.0, y), xytext=(-3, 0), textcoords="offset points", va="center", ha="right", fontsize=6.5, color=INK)
+ax.axvline(0, color=ORANGE, lw=1.6)
+ax.axvline(ALERT, color=GREY, lw=1, ls=(0, (3, 2)))
+ax.text(0.04, len(TTES) - 0.35, "event", color=ORANGE, fontsize=7, va="bottom")
+ax.text(ALERT - 0.04, len(TTES) - 0.35, "mean alert", color=INK2, fontsize=6.3, va="bottom", ha="right")
+ax.set_xlim(-5.0, 0.9)
+ax.set_ylim(-0.6, len(TTES) - 0.1 + 0.3)
+ax.set_yticks([])
+ax.set_xlabel("time relative to the annotated event (s)")
+ax.grid(axis="y", visible=False)
+ax.spines["left"].set_visible(False)
+fig.tight_layout(pad=0.3)
+fig.savefig(OUT_FIG / "fig_clips.pdf")
+plt.close(fig)
+
+# ---------------------------------------------------------------- Figure: alert timing (CNN+LSTM)
+fig, ax = plt.subplots(figsize=(3.45, 1.9))
+ax.axvline(0.5, color=GREY, ls=(0, (2, 2)), lw=1)
+ylabels = []
+for k, tte in enumerate(TTES):
+    for g, (grp, hollow) in enumerate([("ends after alert", False), ("ends before alert", True)]):
+        r = alert[(alert["model"] == "lstm") & (alert["tte"] == tte) & (alert["group"] == grp)].iloc[0]
+        y = (len(TTES) - 1 - k) * 2.6 + (1 if g == 0 else 0)
+        ax.errorbar(r["AUC_vs_negatives"], y, xerr=[[r["AUC_vs_negatives"] - r["ci_low"]], [r["ci_high"] - r["AUC_vs_negatives"]]], fmt="o", ms=4,
+                    color=BLUE, mfc="white" if hollow else BLUE, mew=1, capsize=1.5, elinewidth=1)
+        ax.text(0.99, y, f"n={int(r['n_positives'])}", transform=ax.get_yaxis_transform(), ha="right", va="center", fontsize=6, color=INK2)
+        ylabels.append((y, f"{tte} s, clip ends {'after' if g == 0 else 'before'} alert"))
+ax.set_yticks([y for y, _ in ylabels])
+ax.set_yticklabels([l for _, l in ylabels], fontsize=6)
+ax.set_xlim(0.3, 0.9)
+ax.set_xlabel("AUC of these collision clips against all normal clips")
+ax.grid(axis="y", visible=False)
+fig.tight_layout(pad=0.3)
+fig.savefig(OUT_FIG / "fig_alert.pdf")
 plt.close(fig)
 
 # ---------------------------------------------------------------- Table I: main results
@@ -125,7 +173,8 @@ lines += [r"\bottomrule", r"\end{tabular}"]
 (OUT_TAB / "table_main.tex").write_text("\n".join(lines) + "\n", encoding="utf8")
 
 # ---------------------------------------------------------------- Table II: temporal ablation
-lines = [r"\begin{tabular}{@{}lccc@{}}", r"\toprule", r"Variant (same ResNet-18 features) & 0.5\,s & 1.0\,s & 1.5\,s \\", r"\midrule"]
+lines = [r"\scriptsize", r"\setlength{\tabcolsep}{2.5pt}", r"\begin{tabular}{@{}lccc@{}}", r"\toprule",
+         r"Variant (same features) & 0.5\,s & 1.0\,s & 1.5\,s \\", r"\midrule"]
 for variant, name in [("last_frame", "Last frame only"), ("mean_pool", "Mean-pool, no order"),
                       ("lstm_train_shuffled", "LSTM, shuffled train+test"), ("lstm_test_shuffled", "LSTM, shuffled at test only"),
                       ("lstm", "CNN+LSTM (frame order kept)")]:
@@ -140,6 +189,19 @@ for variant, name in [("last_frame", "Last frame only"), ("mean_pool", "Mean-poo
     lines.append(f"{name} & " + " & ".join(cells) + r" \\")
 lines += [r"\bottomrule", r"\end{tabular}"]
 (OUT_TAB / "table_ablation.tex").write_text("\n".join(lines) + "\n", encoding="utf8")
+
+# ---------------------------------------------------------------- Table: epoch-selection pitfall
+nb05 = pd.read_csv(RESULTS / "cnn_lstm_results.csv").sort_values("tte")
+chk = pd.read_csv(RESULTS / "selection_check_fulldata.csv")
+g = chk.groupby("tte").agg(final=("final_epoch", "mean"), final_sd=("final_epoch", "std"), best=("best_epoch", "mean"))
+lines = [r"\scriptsize", r"\setlength{\tabcolsep}{2.5pt}", r"\begin{tabular}{@{}lccc@{}}", r"\toprule",
+         r"CNN+LSTM, how the epoch is chosen & 0.5\,s & 1.0\,s & 1.5\,s \\", r"\midrule"]
+lines.append("Best epoch on the test videos (first run) & " + " & ".join(f"{v:.3f}" for v in nb05["AP"]) + r" \\")
+lines.append("Same, mean of 5 seeds & " + " & ".join(f"{g.loc[t, 'best']:.3f}" for t in TTES) + r" \\")
+lines.append("Fixed 10 epochs, no selection & " + " & ".join(f"{g.loc[t, 'final']:.3f}" + r"\,$\pm$\," + f"{g.loc[t, 'final_sd']:.3f}" for t in TTES) + r" \\")
+lines.append("Epoch chosen on held-out training videos & " + " & ".join(pm("lstm", t, "AP") for t in TTES) + r" \\")
+lines += [r"\bottomrule", r"\end{tabular}"]
+(OUT_TAB / "table_selection.tex").write_text("\n".join(lines) + "\n", encoding="utf8")
 
 # ---------------------------------------------------------------- Numbers quoted in the text (printed and saved for checking)
 def drop(variant, far):
