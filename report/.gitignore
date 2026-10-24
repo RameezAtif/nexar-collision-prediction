@@ -1,0 +1,7 @@
+_preview/
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc

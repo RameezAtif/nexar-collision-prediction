@@ -1,0 +1,12 @@
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+CNN+LSTM, how the epoch is chosen & 0.5\,s & 1.0\,s & 1.5\,s \\
+\midrule
+Best epoch on the test videos (first run) & 0.793 & 0.774 & 0.739 \\
+Same, mean of 5 seeds & 0.793 & 0.780 & 0.742 \\
+Fixed 10 epochs, no selection & 0.754\,$\pm$\,0.015 & 0.753\,$\pm$\,0.009 & 0.676\,$\pm$\,0.021 \\
+Epoch chosen on held-out training videos & 0.762\,$\pm$\,0.019 & 0.749\,$\pm$\,0.011 & 0.675\,$\pm$\,0.021 \\
+\bottomrule
+\end{tabular}
