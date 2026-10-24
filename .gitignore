@@ -27,3 +27,9 @@ results/logs/
 # Course materials (brief and report template): not ours to redistribute
 The project*Computer Vision*
 conference-latex-template.zip
+
+# Slides: extracted dataset frames and the built deck stay out of git (dataset licence: no raw-data redistribution)
+slides/frames/
+slides/work/
+slides/*.pptx
+slides/_render/
