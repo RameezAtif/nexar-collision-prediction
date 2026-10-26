@@ -1,4 +1,4 @@
-# `results/final_analysis/` — partner's analysis (kept for reference)
+# `results/final_analysis/` — initial analysis (kept for reference)
 
 **Source:** commit `6142e6f` "add 06 final analysis" by Rameez Atif, produced by `notebooks/06_final_analysis_results.ipynb`.
 The files in this folder are **unmodified**; nothing here was edited when the branches were merged.

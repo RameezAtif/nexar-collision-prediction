@@ -30,7 +30,7 @@ NEEDS = {
     "03_clip_sampling": "raw videos; rewrites data/processed/{train,val}_split.csv (seed 42)",
     "04_baselines": "raw videos (optical flow); writes results/baseline_results.csv",
     "05_learned_temporal_model": "raw videos (ResNet features, cached afterwards); writes results/cnn_lstm_results.csv",
-    "06_final_analysis_results": "partner's analysis, hard-coded numbers (reference only)",
+    "06_final_analysis_results": "initial analysis, hard-coded numbers (reference only)",
     "06_temporal_ablation": "committed data only; ~2 min",
     "07_final_analysis": "results of notebook 06; seconds",
     "08_failure_analysis": "committed data only; ~2 min",
