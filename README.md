@@ -79,12 +79,11 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 ├── README.md
 ├── EXPERIMENT_LOG.md        every experiment, decision and open item
 ├── requirements.txt
-├── 200notok_proposal.tex    project proposal
 ├── data/processed/          splits, clip definitions, cached ResNet and optical-flow features (committed)
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
 ├── tools/                   run_notebooks.py, make_report_assets.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
-└── docs/PROJECT_DESIGN.md   original long-form design document
+└── docs/                    200notok_proposal.tex (project proposal), PROJECT_DESIGN.md (original design document)
 ```
 
 ## Experimental protocol
