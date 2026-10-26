@@ -31,3 +31,21 @@ conference-latex-template.zip
 # Written report and presentation: submitted separately, kept out of the repository
 report/
 slides/
+
+# Editors, tools and OS clutter
+.vscode/
+.idea/
+.claude/
+Thumbs.db
+desktop.ini
+*.log
+
+# LaTeX build files
+*.aux
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+
+# Generated dataset frames (regenerate with tools/compare_id_blocks.py)
+results/id_blocks/contact_sheet_*.png
