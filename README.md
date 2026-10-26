@@ -71,6 +71,7 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 | `python tools/compare_id_blocks.py --available-only` | Raw-video comparison of the two video-id blocks | yes |
 | `python tools/fulldata_selection_check.py` | Quantifies the cost of choosing the epoch on the test videos | no |
 | `python tools/run_notebooks.py --list` | Lists the notebooks and what each needs | no |
+| `python tools/check_data.py` | Checks that `data/raw/train.csv` and `data/raw/train/*.mp4` are in place | yes |
 
 ## Repository layout
 
@@ -81,7 +82,7 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 ├── requirements.txt
 ├── data/processed/          splits, clip definitions, cached ResNet and optical-flow features (committed)
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
-├── tools/                   run_notebooks.py, make_report_assets.py, compare_id_blocks.py, fulldata_selection_check.py
+├── tools/                   run_notebooks.py, check_data.py, make_report_assets.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
 └── docs/                    200notok_proposal.tex (project proposal), PROJECT_DESIGN.md (original design document)
 ```
@@ -119,8 +120,33 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 ## Data
 
 The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
-Accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data) or use the [Hugging Face dataset](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction),
-then place `train.csv` and the `train/` folder under `data/raw/`.
+**Get the data.** Accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data), then download `train.csv` and the `train/` videos, for example with the [Kaggle CLI](https://github.com/Kaggle/kaggle-api):
+
+```bash
+kaggle competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p data/raw   # one video; repeat per id
+kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition (about 31 GB, includes test videos); unzip so the videos end up in data/raw/train/
+```
+
+The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create exactly the layout below; the CLI needs your Kaggle API token (see the Kaggle docs). The full download was not run.
+
+**Where it goes.** The code reads this exact layout (relative to the project root):
+
+```text
+data/raw/
+├── train.csv              columns: id, time_of_event, time_of_alert, target
+└── train/
+    ├── 00000.mp4          one file per video id, 5 digits, zero padded
+    └── ...                1,500 files for the full set
+```
+
+**Check it:**
+
+```bash
+python tools/check_data.py        # counts the videos, opens a few, and says what is missing
+```
+
+A partial download is enough for `python tools/compare_id_blocks.py --available-only`; notebooks 01–05 need all 1,500 videos. The [Hugging Face copy](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction) is gated and uses a different folder layout (`train/positive/`, `train/negative/`); we did not use it, so its files would have to be rearranged into the layout above.
 
 ### Data attribution and licence
 
