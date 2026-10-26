@@ -1,0 +1,4 @@
+task,n,AUC_from_video_properties,shuffled_label_AUC_mean,shuffled_label_AUC_max
+class (collision vs normal),431,0.5792664509169363,0.48952642934196344,0.6051132686084143
+"lower vs upper id half, within collision",206,0.6039211989819964,0.5456404939202564,0.6732962578942407
+"lower vs upper id half, within normal",225,0.6026785714285714,0.4997866624525916,0.5978192161820479

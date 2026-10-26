@@ -1,0 +1,126 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=1.75cm,top=1.55cm,bottom=1.65cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{array,tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{ragged2e}
+\usepackage{tcolorbox}
+\usepackage{hyperref}
+
+% --- Colour palette ---
+\definecolor{navy}{HTML}{163A5F}
+\definecolor{ruleblue}{HTML}{A9BECE}
+\definecolor{paleblue}{HTML}{EEF4F8}
+\definecolor{bodygray}{HTML}{2A2A2A}
+
+\hypersetup{hidelinks}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.28em}
+\color{bodygray}
+
+% --- Section styling ---
+\titleformat{\section}
+  {\normalfont\bfseries\color{navy}\fontsize{13.5}{15.5}\selectfont}
+  {\thesection.}{0.55em}{}
+  [\vspace{0.20em}{\color{ruleblue}\titlerule[0.45pt]}]
+\titlespacing*{\section}{0pt}{0.35em}{0.38em}
+
+% --- Compact bullets ---
+\setlist[itemize]{leftmargin=1.25em,itemsep=0.10em,topsep=0.12em,parsep=0pt,partopsep=0pt}
+
+% --- Small highlighted label used for Research question ---
+\newcommand{\rqtag}{%
+  \colorbox{paleblue}{\strut\textbf{\color{navy}Research question}}%
+}
+
+\begin{document}
+\small
+
+% -----------------------------------------------------------------------------
+% Header
+% -----------------------------------------------------------------------------
+\begin{minipage}[t]{0.72\textwidth}
+  {\color{navy}\bfseries\fontsize{17.5}{17}\selectfont
+  Predicting Vehicle Collisions\\[-0.05em]
+  from Dashcam Video}\par
+  \vspace{0.30em}
+  {\color{black!62}\fontsize{9.2}{11}\selectfont
+  Early collision prediction with classical motion cues and temporal learning}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.24\textwidth}
+  \raggedleft
+  {\bfseries COMS4036A}\par
+  Computer Vision\par
+  Compare / Probe
+\end{minipage}
+
+\vspace{0.48em}
+{\color{ruleblue}\hrule height 0.55pt}
+\vspace{0.78em}
+
+\textbf{\color{navy}Team:}\quad
+Muhammad Hoosen (2552770)\quad $\cdot$ \quad Rameez Atif (2612521)
+
+% -----------------------------------------------------------------------------
+\section{What problem?}
+
+Autonomous collision-warning systems are only useful if they can recognise danger \emph{before} an impact or near-miss occurs. This project investigates how prediction quality changes as the warning horizon increases, and whether learned temporal features provide useful information beyond simple visual motion cues.
+
+\rqtag\hspace{0.75em}\emph{How does collision-prediction performance change as time-to-event increases, and does a lightweight learned temporal model outperform classical motion-based cues?}
+
+\textbf{Hypothesis.} Performance will decrease as the prediction horizon increases from 0.5\,s to 1.5\,s, but the learned temporal model will degrade more slowly than the classical motion baseline.
+
+% -----------------------------------------------------------------------------
+\section{What data?}
+
+We will use the \textbf{Nexar Dashcam Collision Prediction Dataset}, containing approximately 1,500 real-world driving videos with collision/near-miss and normal-driving examples. Positive videos include an annotated event timestamp, allowing clips to be created at controlled \textbf{time-to-event (TTE)} values.
+
+The dataset will be split at \textbf{video level before clip generation} to prevent temporal or scene leakage between training and test sets. The core experiments will use clips ending at \textbf{0.5\,s, 1.0\,s and 1.5\,s before the event}. Available metadata such as weather, lighting and scene type will only be used for optional failure analysis.
+
+% -----------------------------------------------------------------------------
+\section{What will we measure?}
+
+The primary experiment will measure how prediction quality changes with TTE. We will report:
+\begin{itemize}
+  \item \textbf{AUPRC} as the primary performance measure, together with precision and recall;
+  \item a \textbf{performance-versus-TTE curve} for 0.5\,s, 1.0\,s and 1.5\,s;
+  \item where practical, \textbf{recall at a fixed false-alarm rate}, since false alarms are important in collision-warning systems.
+\end{itemize}
+
+A secondary temporal ablation will compare normal frame order with simplified temporal inputs such as optical flow or shuffled frames to test whether the learned model is genuinely using temporal information rather than static scene appearance.
+
+% -----------------------------------------------------------------------------
+\section{What is the baseline?}
+
+All methods will use the \textbf{same video split, TTE definitions and evaluation protocol}.
+
+\vspace{0.25em}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash\color{navy}\bfseries}p{0.23\textwidth} X}
+Model 0 - Naive & Random or majority-class prediction, establishing the minimum useful performance. \\
+Model 1 - Classical & Optical flow between consecutive frames, summarised using simple motion statistics and a lightweight threshold/classifier. This provides an interpretable motion-only baseline. \\
+Model 2 - Learned & Frame-level features from a pretrained CNN, followed by a lightweight GRU/LSTM or similar temporal aggregation module for collision/near-miss classification. \\
+\end{tabularx}
+
+\vspace{0.25em}
+\begin{tcolorbox}[
+  colback=paleblue,
+  colframe=paleblue,
+  boxrule=0pt,
+  arc=0pt,
+  outer arc=0pt,
+  left=0.35em,right=0.35em,top=0.18em,bottom=0.18em,
+  boxsep=0pt
+]
+\textbf{\color{navy}Minimum viable result.} The project remains complete with the three models above evaluated at the three TTE values. The central result is whether learned temporal features outperform classical motion cues, and how rapidly each approach degrades as earlier warning is required.
+\end{tcolorbox}
+
+\end{document}
