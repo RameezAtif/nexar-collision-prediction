@@ -79,12 +79,13 @@ The quick start reuses the committed features. To rebuild everything from the Ne
    ```
 7. **See what changed.** `git status` and `git diff --stat` list the files that differ from the committed ones. Expect small numerical differences across machines and library versions.
 
+<a id="quick-test"></a>
 ### Quick test of notebooks 01–05 on 12 videos
 
 To try the raw-video notebooks without the 31 GB download, use a small set of 12 videos (about 190 MB). Do this in a throwaway clone, because the notebooks overwrite the committed files in `data/processed/` and `results/`.
 
 ```bash
-python tools/make_smoke_set.py --commands    # prints the Kaggle commands for train.csv and the 12 videos; run them from the project root
+python tools/download_smoke_set.py          # sets up Kaggle, opens browser login, downloads only missing files
 python tools/make_smoke_set.py --build       # trims data/raw/train.csv to the 12 videos and clears the cached ResNet features
 python tools/run_notebooks.py 01_dataset_exploration 02_video_inspection 03_clip_sampling 04_baselines 05_learned_temporal_model   # about 4 minutes
 python tools/make_smoke_set.py --restore     # puts the full train.csv back
@@ -92,7 +93,9 @@ python tools/make_smoke_set.py --restore     # puts the full train.csv back
 
 The 12 videos are the smallest set that works: notebook 03 needs about 10 videos for its stratified 80/20 split, and notebook 05 has a demo cell that looks up video 01734 in the training clips. Only notebooks 01–05 are meant for this set; the results (AP and so on) are meaningless on 12 videos, and notebooks 06–09 need the committed full-size data.
 
-The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kaggle-credentials).
+Before downloading, sign in and accept the [Kaggle competition rules](https://www.kaggle.com/competitions/nexar-collision-prediction/rules). The download helper needs Python 3.11+ installed (the notebooks can still use Python 3.10). It creates its own `.venv-kaggle/` automatically, so there are no shell variables, API keys to copy, or download loops to paste. Finish the browser login when prompted. If interrupted, rerun the same command: completed files are skipped. Already have working Kaggle credentials? Add `--skip-login`.
+
+The download only fetches files. The separate `--build` command prepares the small dataset and clears cached features; `--restore` restores the full label CSV, but does not undo notebook outputs or restore cached features.
 
 ## Commands
 
@@ -106,6 +109,7 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 | `python tools/scene_content_check.py` | Zero-shot CLIP check of whether the two id blocks differ in scene content; needs `pip install transformers` and raw videos (a partial set is fine) | yes |
 | `python tools/run_notebooks.py --list` | Lists the notebooks and what each needs | no |
 | `python tools/check_data.py` | Checks that `data/raw/train.csv` and `data/raw/train/*.mp4` are in place | yes |
+| `python tools/download_smoke_set.py` | Downloads the 12 quick-test videos and `train.csv` (own Kaggle environment, browser login); rerun to resume, finished files are skipped | no |
 | `python tools/make_smoke_set.py --build` | Sets up the 12-video quick test of notebooks 01–05 (see above); `--commands` lists the downloads, `--restore` undoes it | 12 videos |
 
 ## Repository layout
@@ -117,7 +121,7 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 ├── requirements.txt
 ├── data/processed/          splits, clip definitions, cached ResNet and optical-flow features (committed)
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
-├── tools/                   run_notebooks.py, check_data.py, make_smoke_set.py, make_report_assets.py, scene_content_check.py, compare_id_blocks.py, fulldata_selection_check.py
+├── tools/                   run_notebooks.py, check_data.py, download_smoke_set.py, make_smoke_set.py, make_report_assets.py, scene_content_check.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
 └── docs/                    200notok_proposal.tex (project proposal), PROJECT_DESIGN.md (original design document)
 ```
@@ -154,6 +158,17 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 - **Earlier numbers.** Notebook 05 and `results/final_analysis/` pick the best epoch on the test videos and are optimistic by about 0.04–0.07 AP; they are kept for reference only (see `EXPERIMENT_LOG.md`).
 
 ## Data
+
+**Just want the 12 test videos?** Accept the [competition rules](https://www.kaggle.com/competitions/nexar-collision-prediction/rules), then run:
+
+```bash
+python tools/download_smoke_set.py
+```
+
+This handles Kaggle installation, browser login and file placement on Windows, macOS and Linux. Python 3.11+ must be installed. Continue with `--build` in the [12-video quick test](#quick-test) above.
+
+<details>
+<summary>Manual Kaggle setup and full dataset download</summary>
 
 The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
 **Get the data** in three steps (you only need this for notebooks 01-05 and the quick test; the main results reproduce without it). First accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data). Use one terminal window for all three steps.
@@ -216,6 +231,8 @@ The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in th
    For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) with `$k competitions download -c nexar-collision-prediction -p data/raw` and unzip it so the videos end up in `data/raw/train/`.
 
 If you see `Could not find kaggle.json`, you ran an older Kaggle command found on your PATH: use `$k` (the environment from step 1) instead of plain `kaggle`. These commands were run with Kaggle CLI 2.2.5 and create exactly the layout below.
+
+</details>
 
 **Where it goes.** The code reads this exact layout (relative to the project root):
 
