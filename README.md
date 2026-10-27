@@ -39,7 +39,7 @@ Average precision (AP) on the 300 held-out test videos; mean ± std over 5 train
 - **Learned features beat motion cues** at every horizon (AP +0.197 / +0.180 / +0.117; all paired 95% bootstrap CIs exclude zero).
 - **Temporal modelling is not demonstrated.** A single frame does as well as the LSTM, as do mean-pooling and an LSTM trained on shuffled frames — the gain comes from the pretrained visual features.
 - **Performance falls with horizon**, but only the 0.5 s → 1.5 s drop (0.086 AP, 95% CI 0.03–0.14) is distinguishable from zero. The proposal's hypothesis (the learned model degrades *more slowly* than optical flow) is **not supported**.
-- **Much of the signal is present long before the event** (a single frame from 3+ s before it already gives AP ≈ 0.70), so we describe the model as recognising high-risk scenes rather than detecting imminent collisions.
+- **Much of the signal is present long before the event** (a single frame from 3+ s before it already gives AP ≈ 0.69, range 0.68–0.70; chance is 0.5), so we describe the model as recognising high-risk scenes rather than detecting imminent collisions.
 
 ![Temporal ablation](results/figures/final_fig2_temporal_ablation.png)
 
@@ -54,7 +54,7 @@ git clone https://github.com/RameezAtif/nexar-collision-prediction.git
 cd nexar-collision-prediction
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements.txt    # a few minutes (includes PyTorch)
 
 python tools/run_notebooks.py      # reproduces all results (notebooks 06–09), about 5 minutes
 ```
@@ -153,4 +153,4 @@ A partial download is enough for `python tools/compare_id_blocks.py --available-
 This project uses the **Nexar Dashcam Collision Prediction Dataset**: D. C. Moura, S. Zhu and O. Zvitia, "Nexar Dashcam Collision Prediction Dataset and Challenge," *CVPR Workshops*, 2025, pp. 2608–2616 (Nexar Inc.).
 The Nexar open data licence permits free use, copying and redistribution **with attribution to Nexar Inc. and the copyright notice retained**, and prohibits resale, re-identification of people or vehicles, weapons use, and systems intended to cause harm
 ([licence text](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction/blob/main/LICENSE)).
-This repository holds derived data only (labels, event times, clip windows, features) and a few small example-frame contact sheets in `results/id_blocks/`, with this attribution. It contains no raw videos.
+This repository holds derived data only (labels, event times, clip windows, features) with this attribution. It contains no raw videos and no dataset frames; `tools/compare_id_blocks.py` can write example-frame contact sheets locally, but they are not committed.
