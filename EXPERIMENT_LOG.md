@@ -377,7 +377,7 @@ Model checkpoints (`*.pt`) are gitignored; notebook 05 writes them to `results/`
 | `notebooks/07_final_analysis.ipynb` | E6: final figures, tables, hypothesis check (reads CSVs, no training) |
 | `notebooks/08_failure_analysis.ipynb` | E7: frame-position, alert-timing, shortcut and error analysis |
 | `notebooks/09_id_block_confound.ipynb` | E8: feature-based tests of the id-block confound |
-| `tools/compare_id_blocks.py` | Raw-video comparison of the two id blocks (needs the dataset; untested on real data) |
+| `tools/compare_id_blocks.py` | Raw-video comparison of the two id blocks (needs the dataset; run on a 431-video sample, E9) |
 | `results/baseline_results.csv` | Naive + scaled flow (final baselines) |
 | `results/cnn_lstm_results.csv`, `baseline_and_cnn_lstm_results.csv` | Notebook 05 results (superseded) |
 | `results/temporal_ablation_runs.csv` | Every run (variant x TTE x seed), 10 ep |
