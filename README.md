@@ -159,61 +159,63 @@ The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in th
 **Get the data** in three steps. First accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data).
 
 <a id="kaggle-credentials"></a>
-**Step 1: a Kaggle token (one-off).** Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token** and **copy it** (it is shown once). Then save it from your clipboard, so there is nothing to edit:
+1. **Install the Kaggle command** (it needs Python 3.11 or newer, see [Kaggle's instructions](https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md)): `pip install kaggle`, then check that `kaggle --version` says 2.x.
 
-```powershell
-# Windows PowerShell
-mkdir "$HOME\.kaggle" -Force
-Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
-```
+   <details>
+   <summary>It says 1.x, or you get <code>Could not find kaggle.json</code>?</summary>
 
-```bash
-# macOS (Linux: after mkdir, paste the token into ~/.kaggle/access_token with nano)
-mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
-```
+   An older Python comes first on your PATH. Install into a separate environment and use its path wherever these steps say `kaggle`:
 
-The `.kaggle` folder lives in your home folder (`C:\Users\YOUR_NAME\.kaggle` on Windows, `~/.kaggle` on macOS and Linux), outside this repository. Never commit it.
+   ```powershell
+   # Windows PowerShell
+   py -3.13 -m venv "$HOME\kvenv"
+   & "$HOME\kvenv\Scripts\pip" install kaggle         # then use "$HOME\kvenv\Scripts\kaggle.exe"
+   ```
 
-**Step 2: the Kaggle command, version 2.x.** Run `kaggle --version`. If it says 1.x (or you later see `Could not find kaggle.json`), install 2.x next to it. It needs Python 3.11 or newer and does not touch this repository:
+   ```bash
+   # macOS / Linux
+   python3 -m venv ~/kvenv && ~/kvenv/bin/pip install kaggle         # then use ~/kvenv/bin/kaggle
+   ```
+   </details>
 
-```powershell
-# Windows PowerShell
-py -3.13 -m venv "$HOME\kvenv"
-& "$HOME\kvenv\Scripts\pip" install kaggle
-```
+2. **Log in once:** `kaggle auth login` (opens your browser).
 
-```bash
-# macOS / Linux
-python3 -m venv ~/kvenv && ~/kvenv/bin/pip install kaggle
-```
+   <details>
+   <summary>Browser login not working? Use a token instead</summary>
 
-<details>
-<summary>Prefer the old Kaggle CLI (1.x)?</summary>
+   Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token** and **copy it** (shown once). Then save it from your clipboard, so there is nothing to edit:
 
-The 1.x command (what `pip install kaggle` gives on Python 3.10 or older) cannot read the new token. It needs a legacy `kaggle.json` in the `.kaggle` folder, containing `{"username": "YOUR_USERNAME", "key": "YOUR_KEY"}` (on macOS and Linux also run `chmod 600 ~/.kaggle/kaggle.json`). Installing 2.x as above is simpler.
-</details>
+   ```powershell
+   # Windows PowerShell
+   mkdir "$HOME\.kaggle" -Force
+   Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
+   ```
 
-**Step 3: download.** For the 12-video quick test (about 190 MB), paste this from the project root:
+   ```bash
+   # macOS (Linux: after mkdir, paste the token into ~/.kaggle/access_token with nano)
+   mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
+   ```
 
-```powershell
-# Windows PowerShell (use $k = "kaggle" instead if your kaggle is already 2.x)
-$k = "$HOME\kvenv\Scripts\kaggle.exe"
-& $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-foreach ($i in "00000","00003","00013","00014","00024","01040","01041","01042","01043","01045","01046","01734") { & $k competitions download -c nexar-collision-prediction -f "train/$i.mp4" -p data/raw }
-```
+   The `.kaggle` folder is in your home folder (`C:\Users\YOUR_NAME\.kaggle` on Windows), outside this repository; never commit it.
+   </details>
 
-```bash
-# macOS / Linux (use k=kaggle instead if your kaggle is already 2.x)
-k=~/kvenv/bin/kaggle
-$k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-for i in 00000 00003 00013 00014 00024 01040 01041 01042 01043 01045 01046 01734; do $k competitions download -c nexar-collision-prediction -f train/$i.mp4 -p data/raw; done
-```
+3. **Download.** For the 12-video quick test (about 190 MB), paste this from the project root (use the full path in the first line if you made the separate environment):
 
-For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) and unzip it so the videos end up in `data/raw/train/`:
+   ```powershell
+   # Windows PowerShell
+   $k = "kaggle"
+   & $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+   foreach ($i in "00000","00003","00013","00014","00024","01040","01041","01042","01043","01045","01046","01734") { & $k competitions download -c nexar-collision-prediction -f "train/$i.mp4" -p data/raw }
+   ```
 
-```bash
-kaggle competitions download -c nexar-collision-prediction -p data/raw
-```
+   ```bash
+   # macOS / Linux
+   k=kaggle
+   $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+   for i in 00000 00003 00013 00014 00024 01040 01041 01042 01043 01045 01046 01734; do $k competitions download -c nexar-collision-prediction -f train/$i.mp4 -p data/raw; done
+   ```
+
+   For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) with `kaggle competitions download -c nexar-collision-prediction -p data/raw` and unzip it so the videos end up in `data/raw/train/`.
 
 These commands were run with Kaggle CLI 2.2.5 and create exactly the layout below.
 
