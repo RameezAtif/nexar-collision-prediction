@@ -61,23 +61,68 @@ python tools/run_notebooks.py      # reproduces all results (notebooks 06–09),
 
 No raw videos are needed for this: the split, clip definitions and cached features are committed in `data/processed/`.
 
+## Reproducibility
+
+- **Seeds:** 42 for the split and sampling; 42–46 for training; fixed seeds for bootstrap and permutation tests.
+- **Verified:** a fresh clone with no raw data regenerated all 24 result CSVs identically (difference < 1e-9) on the same machine. Across operating systems and library versions expect small numerical differences (for example ≤ 0.0007 AP for the scaled optical-flow baseline).
+
+### Where each reported number comes from
+
+| Report item | File | Produced by |
+|---|---|---|
+| Main results (AP, recall at fixed false-alarm rate), mean ± std over 5 seeds | `results/temporal_ablation_summary.csv` | notebook 06 |
+| Paired bootstrap confidence intervals | `results/temporal_ablation_bootstrap.csv` | notebook 06 |
+| Single-frame AP by frame position; annotated-alert timing | `results/failure_frame_position_ap.csv`, `results/failure_alert_timing.csv` | notebook 08 |
+| Video-id block tests | `results/id_block_test_*.csv`, `results/id_blocks/*.csv` | notebook 09, `tools/compare_id_blocks.py` |
+| Scene-content check of the id blocks | `results/scene_content/*.csv` | `tools/scene_content_check.py` |
+| Selection-optimism check | `results/selection_check_fulldata.csv` | `tools/fulldata_selection_check.py` |
+| Figures and tables of the written report (submitted separately) | generated from the CSVs above | `tools/make_report_assets.py` |
+
 ## Step-by-step: rebuilding from the raw videos
 
 The quick start reuses the committed features. To rebuild everything from the Nexar videos, follow these steps. Do this in a separate clone if you want to keep the committed files untouched, because the notebooks overwrite them.
 
 1. **Install.** Clone the repo and install the requirements, as in the quick start.
-2. **Download the data.** Accept the Kaggle competition rules, then fetch `train.csv` and the training videos into `data/raw/` (commands and exact layout in [Data](#data)).
+2. **Download the data.** Accept the Kaggle competition rules, then fetch `train.csv` and the training videos into `data/raw/` (commands and exact layout in [Get the data](#get-the-data) below).
 3. **Check it.** Run `python tools/check_data.py`. You want `videos found: 1500 of 1500 labelled` and `Complete set.`
 4. **Optional: re-extract the ResNet features.** Notebook 05 reuses `data/processed/cnn_features/*.npy` if they exist. Delete them to compute the features again.
 5. **Rebuild the inputs and the original models** (slow: hours on a CPU; the optical-flow notebook prints nothing until it finishes):
    ```bash
    python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model
    ```
-6. **Regenerate the reported results** (about 5 minutes):
-   ```bash
-   python tools/run_notebooks.py
-   ```
+6. **Regenerate the reported results** (about 5 minutes): run the quick-start command again, `python tools/run_notebooks.py`.
 7. **See what changed.** `git status` and `git diff --stat` list the files that differ from the committed ones. Expect small numerical differences across machines and library versions.
+
+### Get the data
+
+The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
+The main results reproduce without them. Both ways start on the [Kaggle competition page](https://www.kaggle.com/competitions/nexar-collision-prediction/data), where you accept the rules.
+
+**Everything, in the browser.** On that page click **Download All**. It is a zip of about 31 GB, so you need about twice that much free disk space to unzip it. Unzip it into `data/raw/` so that you get `data/raw/train.csv` and `data/raw/train/00000.mp4`, and so on. Then run `python tools/check_data.py` to confirm.
+
+**Or with the command line** (also for a partial download, such as the 12-video quick test). Use the Kaggle command-line tool, **version 2.x**. It needs Python 3.11 or newer; check with `kaggle --version`. Setup details are in [Kaggle's instructions](https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md).
+
+```bash
+pip install kaggle
+kaggle auth login        # opens your browser, once
+kaggle competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p data/raw   # one video; repeat per id
+kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition, same zip as Download All
+```
+
+For the 12-video quick test, `python tools/make_smoke_set.py --commands` prints the exact download commands.
+
+**Where it goes.** The code reads this exact layout (relative to the project root):
+
+```text
+data/raw/
+├── train.csv              columns: id, time_of_event, time_of_alert, target
+└── train/
+    ├── 00000.mp4          one file per video id, 5 digits, zero padded
+    └── ...                1,500 files for the full set
+```
+
+A partial download is enough for `python tools/compare_id_blocks.py --available-only`; notebooks 01–05 need all 1,500 videos, or the 12-video quick test described below. The [Hugging Face copy](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction) is gated and uses a different folder layout (`train/positive/`, `train/negative/`); we did not use it, so its files would have to be rearranged into the layout above.
 
 ### Quick test of notebooks 01–05 on 12 videos
 
@@ -92,7 +137,7 @@ python tools/make_smoke_set.py --restore     # puts the full train.csv back
 
 The 12 videos are the smallest set that works: notebook 03 needs about 10 videos for its stratified 80/20 split, and notebook 05 has a demo cell that looks up video 01734 in the training clips. Only notebooks 01–05 are meant for this set; the results (AP and so on) are meaningless on 12 videos, and notebooks 06–09 need the committed full-size data.
 
-The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kaggle-credentials).
+The downloads need the Kaggle command-line tool and a login: see [Get the data](#get-the-data) above.
 
 ## Commands
 
@@ -129,23 +174,6 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 - **Training:** Adam, lr 1e-3, batch 32, 10 epochs; epoch chosen on 20% of the *training* videos, never on the test videos; 5 seeds.
 - **Metrics:** average precision (primary); recall at ≤ 10% false-alarm rate; ROC-AUC, precision, recall, F1 in the CSVs. Uncertainty: seed std plus a paired bootstrap over the 300 test clips (2,000 resamples).
 
-## Reproducibility
-
-- **Seeds:** 42 for the split and sampling; 42–46 for training; fixed seeds for bootstrap and permutation tests.
-- **Verified:** a fresh clone with no raw data regenerated all 24 result CSVs identically (difference < 1e-9) on the same machine. Across operating systems and library versions expect small numerical differences (for example ≤ 0.0007 AP for the scaled optical-flow baseline).
-
-### Where each reported number comes from
-
-| Report item | File | Produced by |
-|---|---|---|
-| Main results (AP, recall at fixed false-alarm rate), mean ± std over 5 seeds | `results/temporal_ablation_summary.csv` | notebook 06 |
-| Paired bootstrap confidence intervals | `results/temporal_ablation_bootstrap.csv` | notebook 06 |
-| Single-frame AP by frame position; annotated-alert timing | `results/failure_frame_position_ap.csv`, `results/failure_alert_timing.csv` | notebook 08 |
-| Video-id block tests | `results/id_block_test_*.csv`, `results/id_blocks/*.csv` | notebook 09, `tools/compare_id_blocks.py` |
-| Scene-content check of the id blocks | `results/scene_content/*.csv` | `tools/scene_content_check.py` |
-| Selection-optimism check | `results/selection_check_fulldata.csv` | `tools/fulldata_selection_check.py` |
-| Figures and tables of the written report (submitted separately) | generated from the CSVs above | `tools/make_report_assets.py` |
-
 ## Limitations
 
 - **Video-id blocks.** Every collision video has id ≤ 1039 and every normal video id ≥ 1040. No model uses the id, but the blocks might differ in recording conditions. On a 431-video sample we found no difference in resolution, frame rate, duration, brightness or overlay. A quick scene check on 360 of these videos (zero-shot CLIP, `tools/scene_content_check.py`) found no difference in time of day or weather and no drift with the id, but the blocks differ in traffic: collision videos are more often busy city traffic (49% vs 27%) and normal videos more often empty roads (34% vs 16%). So we say the model separates the two groups, plausibly by scene type, not that it detects imminent collisions.
@@ -153,89 +181,7 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 - **One frozen backbone and one clip design;** the optical-flow baseline uses frames about 0.13 s apart, so classical cues may be underestimated.
 - **Earlier numbers.** Notebook 05 and `results/final_analysis/` pick the best epoch on the test videos and are optimistic by about 0.04–0.07 AP; they are kept for reference only (see `EXPERIMENT_LOG.md`).
 
-## Data
-
-The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
-**Get the data** in three steps (you only need this for notebooks 01-05 and the quick test; the main results reproduce without it). First accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data). Use one terminal window for all three steps.
-
-<a id="kaggle-credentials"></a>
-1. **Install the Kaggle command in its own environment.** It needs Python 3.11 or newer. A separate environment avoids any older Kaggle install on your computer, and the variable `$k` makes every later step use this copy:
-
-   ```powershell
-   # Windows PowerShell  (py -3.13 can be any Python 3.11+, for example py -3.12)
-   py -3.13 -m venv "$HOME\kvenv"
-   & "$HOME\kvenv\Scripts\pip" install kaggle
-   $k = "$HOME\kvenv\Scripts\kaggle.exe"
-   ```
-
-   ```bash
-   # macOS / Linux
-   python3 -m venv ~/kvenv && ~/kvenv/bin/pip install kaggle
-   k=~/kvenv/bin/kaggle
-   ```
-
-2. **Log in once.** This opens your browser:
-
-   ```powershell
-   & $k auth login        # macOS / Linux: $k auth login
-   ```
-
-   <details>
-   <summary>Browser login not working? Use a token instead</summary>
-
-   Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token** and **copy it** (shown once). Then save it from your clipboard, so there is nothing to edit:
-
-   ```powershell
-   # Windows PowerShell
-   mkdir "$HOME\.kaggle" -Force
-   Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
-   ```
-
-   ```bash
-   # macOS (Linux: after mkdir, paste the token into ~/.kaggle/access_token with nano)
-   mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
-   ```
-
-   The `.kaggle` folder is in your home folder (`C:\Users\YOUR_NAME\.kaggle` on Windows), outside this repository; never commit it.
-   </details>
-
-3. **Download.** For the 12-video quick test (about 190 MB), paste this from the project root:
-
-   ```powershell
-   # Windows PowerShell  (new window? repeat the $k = ... line from step 1 first)
-   & $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-   foreach ($i in "00000","00003","00013","00014","00024","01040","01041","01042","01043","01045","01046","01734") { & $k competitions download -c nexar-collision-prediction -f "train/$i.mp4" -p data/raw }
-   ```
-
-   ```bash
-   # macOS / Linux  (new window? repeat the k=... line from step 1 first)
-   $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-   for i in 00000 00003 00013 00014 00024 01040 01041 01042 01043 01045 01046 01734; do $k competitions download -c nexar-collision-prediction -f train/$i.mp4 -p data/raw; done
-   ```
-
-   For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) with `$k competitions download -c nexar-collision-prediction -p data/raw` and unzip it so the videos end up in `data/raw/train/`.
-
-If you see `Could not find kaggle.json`, you ran an older Kaggle command found on your PATH: use `$k` (the environment from step 1) instead of plain `kaggle`. These commands were run with Kaggle CLI 2.2.5 and create exactly the layout below.
-
-**Where it goes.** The code reads this exact layout (relative to the project root):
-
-```text
-data/raw/
-├── train.csv              columns: id, time_of_event, time_of_alert, target
-└── train/
-    ├── 00000.mp4          one file per video id, 5 digits, zero padded
-    └── ...                1,500 files for the full set
-```
-
-**Check it:**
-
-```bash
-python tools/check_data.py        # counts the videos, opens a few, and says what is missing
-```
-
-A partial download is enough for `python tools/compare_id_blocks.py --available-only`; notebooks 01–05 need all 1,500 videos, or the 12-video quick test described above. The [Hugging Face copy](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction) is gated and uses a different folder layout (`train/positive/`, `train/negative/`); we did not use it, so its files would have to be rearranged into the layout above.
-
-### Data attribution and licence
+## Data attribution and licence
 
 This project uses the **Nexar Dashcam Collision Prediction Dataset**: D. C. Moura, S. Zhu and O. Zvitia, "Nexar Dashcam Collision Prediction Dataset and Challenge," *CVPR Workshops*, 2025, pp. 2608–2616 (Nexar Inc.).
 The Nexar open data licence permits free use, copying and redistribution **with attribution to Nexar Inc. and the copyright notice retained**, and prohibits resale, re-identification of people or vehicles, weapons use, and systems intended to cause harm
