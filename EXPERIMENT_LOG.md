@@ -275,6 +275,25 @@ Outputs: `results/selection_check_fulldata.csv` (per run).
 **Course requirements** (from the project brief): report at most six pages, IEEE two-column, repo link on page 1 and reachable logged out; repo marked on README with setup, data and commands, seeds set, results reproducible from a clean checkout; third-party data licence recorded in the report; AI use declared in the report. Presentation and live Q&A on Wed 28 Oct, 09:00 (10 min + 5 min; every member must be able to explain every part); report due 07:00 Wed 28 Oct.
 **Open before submission:** repo must be public (it is currently private); the working branch must be merged to `main` or linked directly; make sure the separate AI declaration form is attached and accurate (confirm with Rameez, and against the course AI policy).
 
+### E12 - Scene-content check of the id blocks (`tools/scene_content_check.py`) - DONE (quick, exploratory)
+**Why:** E8/E9 left one question open: do the collision block (ids <= 1039) and the normal block (ids >= 1040) differ in *what they show* (time of day, weather, road type, traffic)? Added after the report's first draft, so it is an extra check, not part of the planned protocol.
+**Method:** zero-shot CLIP (`openai/clip-vit-base-patch32`) scores 3 frames per video (25/50/75% of the video) against plain-English descriptions in four groups: time of day (3), weather (4), road type (7), traffic (3). **Videos:** the 431 locally available raw videos minus the 71 persistent-error videos (they were chosen because the model got them wrong, which would bias a scene comparison) = **360 videos (171 collision, 189 normal)**; the boundary groups (ids 1000-1079) are complete, the rest is a random sample. Seeds: 42; 2,000 permutations per test; Benjamini-Hochberg correction. Run: `pip install transformers`, then `python tools/scene_content_check.py` (about 2 minutes on a CPU).
+
+| Question | Result |
+|---|---|
+| Time of day (dominant label, collision vs normal videos) | **No difference:** day 63% vs 63%, night 35% vs 32%, dusk/dawn 3% vs 5% (permutation p = 0.48). Agrees with E9's brightness result |
+| Weather | **No clear difference** (p = 0.45). CLIP's "snow" label (18% vs 13%) is probably glare and is not interpreted |
+| Road type | **Differs** (p = 0.001): "a busy city street" 49% of collision vs 27% of normal videos; "a highway or freeway" 9% vs 15%; "a quiet residential street" 11% vs 20% |
+| Traffic | **Differs** (p < 0.001): "heavy traffic with many cars" 19% vs 9%; "an empty road with no other cars" 16% vs 34% |
+| Per-description tests | 7 of 17 descriptions differ at q < 0.05; largest standardised differences: empty road d = -0.71, heavy traffic +0.69, busy city street +0.66 |
+| Drift with id inside a class (34 tests) | **None** at q < 0.05, so no slow change of scene content along the id inside either block |
+| Classes separable from scene appearance alone (mean CLIP embedding, logistic regression, 5-fold CV AUC) | **0.739** on all 360 videos (shuffled-label null: mean 0.497, max 0.581) |
+| Near the class boundary vs far from it (77 videos each; ids 940-1139 vs the rest, 30 random draws) | AUC **0.555** near, **0.711** far; the same pattern as E8 (0.59 vs 0.73) |
+
+**Reading:** the two blocks do not differ in time of day or weather, and nothing drifts with the id, which agrees with E9 (no recording-condition difference). They **do** differ in traffic density and road type: collision videos are more often busy city traffic, normal videos more often empty roads, highways or residential streets. This is consistent with the model recognising risky scenes (E7), and a generic scene classifier with no collision training reaches AUC 0.74, close to the CNN+LSTM's 0.75 / 0.73 / 0.66 at 0.5 / 1.0 / 1.5 s (different video subsets and single frames, so only a rough comparison). It cannot separate two explanations: (a) real risk factors (busier traffic precedes collisions), or (b) the normal videos being collected from quieter driving. So the model should still be described as separating the two groups, plausibly by scene type, not as detecting imminent collisions.
+**Limits:** zero-shot labels are noisy; 360 videos and 3 frames each; the near-boundary comparison has only 77 videos (low power, AUC from one 5-fold run); the sample is not a fresh random draw of all 1,500 videos, and the numbers depend on which videos are available; 17 descriptions tested (BH-corrected); descriptions within a group overlap ("busy city street" vs "heavy traffic").
+Outputs: `results/scene_content/` (`videos_used.csv`, `A_attributes_collision_vs_normal.csv`, `A2_dominant_label_by_group.csv`, `B_within_class_drift.csv`, `C_scene_classifier_auc.csv`).
+
 ---
 
 ## 4. Findings so far (test set = the 300 held-out videos, descriptive, not final conclusions)
@@ -290,7 +309,7 @@ Outputs: `results/selection_check_fulldata.csv` (per run).
 8. **A hazard-related component exists but is smaller (E7).** Positives whose clip ends after the annotated alert are detected better (AUC about 0.72-0.77) than those ending before it (about 0.62-0.66).
 9. **Video id perfectly separates the classes (E7)** (collision <= 1039, normal >= 1040). Models do not use it, but the blocks may differ in recording conditions, which would partly explain finding 7. Unverified without the raw videos.
 10. **The id structure leaves a visible trace in the features (E8).** Collision score drifts down with id within the collision block (rho -0.128, p = 0.0005), and class separation is weaker near the id boundary (AUC 0.59 vs 0.73). Moderate evidence that part of the signal is id-ordered recording/collection structure; cause unknown until the raw videos are compared.
-11. **The raw videos show no device/format/overlay difference between the id blocks (E9).** Same resolution, fps, duration, overlay and day/night mix; simple properties do not predict the class (AUC 0.58, inside the shuffled-label range). A scene-content difference between blocks remains possible and untested; error examples suggest the model keys on dense, close-following traffic scenes.
+11. **The raw videos show no device/format/overlay difference between the id blocks (E9).** Same resolution, fps, duration, overlay and day/night mix; simple properties do not predict the class (AUC 0.58, inside the shuffled-label range). A scene-content difference between blocks was then tested in E12: no difference in time of day or weather and no drift with id, but collision videos are more often busy city traffic and normal videos more often empty roads (scene appearance alone separates the classes with AUC 0.74); error examples also suggest the model keys on dense, close-following traffic scenes.
 
 Suggested wording for the report: *"Pretrained CNN features separate the collision and normal videos substantially better than optical flow at every horizon. A single-frame ablation shows this comes mainly from the visual representation rather than from temporal modelling, and a frame-position analysis shows much of the signal is present well before the event, so the model should be described as recognising high-risk driving scenes, not as detecting imminent collisions. The two classes occupy disjoint video-id blocks; we found no difference in resolution, frame rate, duration or overlay between blocks, but a scene-content difference between blocks cannot be excluded."*
 
@@ -315,7 +334,7 @@ Suggested wording for the report: *"Pretrained CNN features separate the collisi
 
 ## 6. Known issues / caveats
 
-- **Class-specific video-id blocks (E7-E9).** Collision ids <= 1039, normal ids >= 1040. Not used by any model. Features show an id-ordered trace (E8); raw videos (E9, a 431-video sample) show no resolution/fps/duration/overlay/brightness difference between blocks and the simple properties do not predict the class, but scene content (location, season, traffic) could still differ and was not tested. Report this as a limitation.
+- **Class-specific video-id blocks (E7-E9).** Collision ids <= 1039, normal ids >= 1040. Not used by any model. Features show an id-ordered trace (E8); raw videos (E9, a 431-video sample) show no resolution/fps/duration/overlay/brightness difference between blocks and the simple properties do not predict the class, but scene content (location, season, traffic) could still differ. E12 tested it on 360 videos: no difference in time of day or weather, no drift with id, but a difference in traffic density and road type (collision videos: busier city traffic). Report this as a limitation.
 - **Test set is a relabelled validation set.** The 300 videos were never used for selection in notebook 06, but earlier notebooks (04/05) reported on them and the scaled-flow variant was chosen by looking at them. No separate untouched set exists.
 - **Single backbone, frozen features, one clip configuration** (16 frames over 2 s). Conclusions about temporal modelling apply to this setup only.
 - **Small val set.** Differences of about 0.03 AP are near the noise floor; a single AP has a 95% interval of about +/-0.07.
@@ -330,7 +349,7 @@ Suggested wording for the report: *"Pretrained CNN features separate the collisi
 
 ## 7. Open items / next steps (priority order)
 
-1. **Optional extension of E9:** the sample covers 431 of 1,500 train videos. If more certainty is wanted, download the rest (about 18 GB, `D:` has about 40 GB free) and rerun `python tools/compare_id_blocks.py`; or quantify the scene-content hypothesis (e.g. traffic density / lead-vehicle proximity proxies on the persistent-error videos). Not required for the project.
+1. **Optional extension of E9 and E12:** the sample covers 431 of 1,500 train videos. If more certainty is wanted, download the rest (about 18 GB) and rerun `python tools/compare_id_blocks.py` and `python tools/scene_content_check.py`; or evaluate on a split that holds out id ranges. Not required for the project.
 2. ~~**README refresh**~~ Done 2026-10-24: the README is now a short project overview with results, quick start and reproducibility notes; the old design document moved to `docs/PROJECT_DESIGN.md`.
 3. **Report writing**, using notebook 06/07 numbers, the figures in `results/figures/final_fig*.png`, and the wording and caveats in §4. Cover: RQ1 (horizon), RQ2 (learned vs classical), RQ3 (temporal ablation), hypothesis not supported, id-block caveat, notebook-05 optimism.
 4. **Optional, only if time allows:** GRU instead of LSTM (proposal allows "GRU/LSTM or similar"); dropout / weight decay (overfitting is evident); find which clip was dropped at TTE 1.5; a stronger generalisation test that holds out id blocks (only meaningful if the raw videos show the blocks are comparable).
@@ -378,6 +397,8 @@ Model checkpoints (`*.pt`) are gitignored; notebook 05 writes them to `results/`
 | `notebooks/08_failure_analysis.ipynb` | E7: frame-position, alert-timing, shortcut and error analysis |
 | `notebooks/09_id_block_confound.ipynb` | E8: feature-based tests of the id-block confound |
 | `tools/compare_id_blocks.py` | Raw-video comparison of the two id blocks (needs the dataset; run on a 431-video sample, E9) |
+| `tools/scene_content_check.py` | Zero-shot CLIP scene-content check of the id blocks (needs the dataset and `transformers`; E12) |
+| `results/scene_content/*.csv` | Scene-content check results (E12) |
 | `results/baseline_results.csv` | Naive + scaled flow (final baselines) |
 | `results/cnn_lstm_results.csv`, `baseline_and_cnn_lstm_results.csv` | Notebook 05 results (superseded) |
 | `results/temporal_ablation_runs.csv` | Every run (variant x TTE x seed), 10 ep |

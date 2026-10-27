@@ -88,6 +88,7 @@ The quick start reuses the committed features. To rebuild everything from the Ne
 | `python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model` | Rebuilds the split, clips and optical-flow features from the raw videos and retrains the original baselines and CNN+LSTM (slow: hours on a CPU). Notebook 05 reuses `data/processed/cnn_features/*.npy` if they exist; delete them to re-extract the ResNet features. Run `python tools/run_notebooks.py` afterwards to regenerate the reported results (notebooks 06–09) | yes |
 | `python tools/compare_id_blocks.py --available-only` | Raw-video comparison of the two video-id blocks | yes |
 | `python tools/fulldata_selection_check.py` | Quantifies the cost of choosing the epoch on the test videos | no |
+| `python tools/scene_content_check.py` | Zero-shot CLIP check of whether the two id blocks differ in scene content; needs `pip install transformers` and raw videos (a partial set is fine) | yes |
 | `python tools/run_notebooks.py --list` | Lists the notebooks and what each needs | no |
 | `python tools/check_data.py` | Checks that `data/raw/train.csv` and `data/raw/train/*.mp4` are in place | yes |
 
@@ -100,7 +101,7 @@ The quick start reuses the committed features. To rebuild everything from the Ne
 ├── requirements.txt
 ├── data/processed/          splits, clip definitions, cached ResNet and optical-flow features (committed)
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
-├── tools/                   run_notebooks.py, check_data.py, make_report_assets.py, compare_id_blocks.py, fulldata_selection_check.py
+├── tools/                   run_notebooks.py, check_data.py, make_report_assets.py, scene_content_check.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
 └── docs/                    200notok_proposal.tex (project proposal), PROJECT_DESIGN.md (original design document)
 ```
@@ -125,12 +126,13 @@ The quick start reuses the committed features. To rebuild everything from the Ne
 | Paired bootstrap confidence intervals | `results/temporal_ablation_bootstrap.csv` | notebook 06 |
 | Single-frame AP by frame position; annotated-alert timing | `results/failure_frame_position_ap.csv`, `results/failure_alert_timing.csv` | notebook 08 |
 | Video-id block tests | `results/id_block_test_*.csv`, `results/id_blocks/*.csv` | notebook 09, `tools/compare_id_blocks.py` |
+| Scene-content check of the id blocks | `results/scene_content/*.csv` | `tools/scene_content_check.py` |
 | Selection-optimism check | `results/selection_check_fulldata.csv` | `tools/fulldata_selection_check.py` |
 | Figures and tables of the written report (submitted separately) | generated from the CSVs above | `tools/make_report_assets.py` |
 
 ## Limitations
 
-- **Video-id blocks.** Every collision video has id ≤ 1039 and every normal video id ≥ 1040. No model uses the id, but the blocks might differ in recording conditions. On a 431-video sample we found no difference in resolution, frame rate, duration, brightness or overlay; scene content was not tested.
+- **Video-id blocks.** Every collision video has id ≤ 1039 and every normal video id ≥ 1040. No model uses the id, but the blocks might differ in recording conditions. On a 431-video sample we found no difference in resolution, frame rate, duration, brightness or overlay. A quick scene check on 360 of these videos (zero-shot CLIP, `tools/scene_content_check.py`) found no difference in time of day or weather and no drift with the id, but the blocks differ in traffic: collision videos are more often busy city traffic (49% vs 27%) and normal videos more often empty roads (34% vs 16%). So we say the model separates the two groups, plausibly by scene type, not that it detects imminent collisions.
 - **No separate untouched test set** (the 300 held-out videos informed earlier choices), and only 300 clips, so an AP has a 95% interval of about ±0.07.
 - **One frozen backbone and one clip design;** the optical-flow baseline uses frames about 0.13 s apart, so classical cues may be underestimated.
 - **Earlier numbers.** Notebook 05 and `results/final_analysis/` pick the best epoch on the test videos and are optimistic by about 0.04–0.07 AP; they are kept for reference only (see `EXPERIMENT_LOG.md`).
