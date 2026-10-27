@@ -67,7 +67,7 @@ No raw videos are needed for this: the split, clip definitions and cached featur
 |---|---|:---:|
 | `python tools/run_notebooks.py` | Runs notebooks 06–09 and rewrites the files in `results/` | no |
 | `python tools/make_report_assets.py` | Generates the figures and LaTeX tables used in the written report from `results/*.csv` (writes to a local, untracked `report/` folder) | no |
-| `python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model` | Regenerates the splits, flow features and ResNet features (slow: hours on a CPU) | yes |
+| `python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model` | Rebuilds the split, clips and optical-flow features from the raw videos and retrains the original baselines and CNN+LSTM (slow: hours on a CPU). Notebook 05 reuses `data/processed/cnn_features/*.npy` if they exist; delete them to re-extract the ResNet features. Run `python tools/run_notebooks.py` afterwards to regenerate the reported results (notebooks 06–09) | yes |
 | `python tools/compare_id_blocks.py --available-only` | Raw-video comparison of the two video-id blocks | yes |
 | `python tools/fulldata_selection_check.py` | Quantifies the cost of choosing the epoch on the test videos | no |
 | `python tools/run_notebooks.py --list` | Lists the notebooks and what each needs | no |
