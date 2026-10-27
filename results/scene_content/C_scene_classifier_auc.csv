@@ -1,0 +1,4 @@
+subset,n,cv_auc,null_mean_auc,null_max_auc
+all videos,360,0.7385129490392649,0.49691605557102636,0.5812370432253473
+near boundary (ids 940-1139),77,0.5548611111111111,,
+"far from boundary, same size (mean of 30 draws)",77,0.7109762954369981,,
