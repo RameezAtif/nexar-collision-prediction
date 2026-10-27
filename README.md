@@ -47,7 +47,7 @@ Average precision (AP) on the 300 held-out test videos; mean ± std over 5 train
 
 ## Quick start
 
-Tested from a fresh `git clone` on Windows 10 with Python 3.10 (CPU only; no GPU needed).
+Tested from a fresh `git clone` on Windows 10 with Python 3.10, on a CPU. No GPU is needed: notebooks 06–09, which produce the reported results, deliberately run on the CPU. Notebook 05 (ResNet features and the original CNN+LSTM) uses an Apple GPU (MPS) or an NVIDIA GPU (CUDA) automatically when one is available, and the optical-flow notebook (04) is CPU only.
 
 ```bash
 git clone https://github.com/RameezAtif/nexar-collision-prediction.git
@@ -79,6 +79,19 @@ The quick start reuses the committed features. To rebuild everything from the Ne
    ```
 7. **See what changed.** `git status` and `git diff --stat` list the files that differ from the committed ones. Expect small numerical differences across machines and library versions.
 
+### Quick test of notebooks 01–05 on 12 videos
+
+To try the raw-video notebooks without the 31 GB download, use a small set of 12 videos (about 190 MB). Do this in a throwaway clone, because the notebooks overwrite the committed files in `data/processed/` and `results/`.
+
+```bash
+python tools/make_smoke_set.py --commands    # prints the Kaggle commands for train.csv and the 12 videos; run them from the project root
+python tools/make_smoke_set.py --build       # trims data/raw/train.csv to the 12 videos and clears the cached ResNet features
+python tools/run_notebooks.py 01_dataset_exploration 02_video_inspection 03_clip_sampling 04_baselines 05_learned_temporal_model   # about 4 minutes
+python tools/make_smoke_set.py --restore     # puts the full train.csv back
+```
+
+The 12 videos are the smallest set that works: notebook 03 needs about 10 videos for its stratified 80/20 split, and notebook 05 has a demo cell that looks up video 01734 in the training clips. Only notebooks 01–05 are meant for this set; the results (AP and so on) are meaningless on 12 videos, and notebooks 06–09 need the committed full-size data.
+
 ## Commands
 
 | Command | What it does | Needs raw data |
@@ -91,6 +104,7 @@ The quick start reuses the committed features. To rebuild everything from the Ne
 | `python tools/scene_content_check.py` | Zero-shot CLIP check of whether the two id blocks differ in scene content; needs `pip install transformers` and raw videos (a partial set is fine) | yes |
 | `python tools/run_notebooks.py --list` | Lists the notebooks and what each needs | no |
 | `python tools/check_data.py` | Checks that `data/raw/train.csv` and `data/raw/train/*.mp4` are in place | yes |
+| `python tools/make_smoke_set.py --build` | Sets up the 12-video quick test of notebooks 01–05 (see above); `--commands` lists the downloads, `--restore` undoes it | 12 videos |
 
 ## Repository layout
 
@@ -101,7 +115,7 @@ The quick start reuses the committed features. To rebuild everything from the Ne
 ├── requirements.txt
 ├── data/processed/          splits, clip definitions, cached ResNet and optical-flow features (committed)
 ├── notebooks/               01–09: exploration → baselines → CNN+LSTM → ablation → analysis (see notebooks/README.md)
-├── tools/                   run_notebooks.py, check_data.py, make_report_assets.py, scene_content_check.py, compare_id_blocks.py, fulldata_selection_check.py
+├── tools/                   run_notebooks.py, check_data.py, make_smoke_set.py, make_report_assets.py, scene_content_check.py, compare_id_blocks.py, fulldata_selection_check.py
 ├── results/                 result CSVs and figures/
 └── docs/                    200notok_proposal.tex (project proposal), PROJECT_DESIGN.md (original design document)
 ```
@@ -166,7 +180,7 @@ data/raw/
 python tools/check_data.py        # counts the videos, opens a few, and says what is missing
 ```
 
-A partial download is enough for `python tools/compare_id_blocks.py --available-only`; notebooks 01–05 need all 1,500 videos. The [Hugging Face copy](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction) is gated and uses a different folder layout (`train/positive/`, `train/negative/`); we did not use it, so its files would have to be rearranged into the layout above.
+A partial download is enough for `python tools/compare_id_blocks.py --available-only`; notebooks 01–05 need all 1,500 videos, or the 12-video quick test described above. The [Hugging Face copy](https://huggingface.co/datasets/nexar-ai/nexar_collision_prediction) is gated and uses a different folder layout (`train/positive/`, `train/negative/`); we did not use it, so its files would have to be rearranged into the layout above.
 
 ### Data attribution and licence
 
