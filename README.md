@@ -128,7 +128,7 @@ kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p
 kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition (about 31 GB, includes test videos); unzip so the videos end up in data/raw/train/
 ```
 
-The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create exactly the layout below; the CLI needs your Kaggle API token (see the Kaggle docs). The full download was not run.
+The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create exactly the layout below; the CLI needs your Kaggle API token (see the Kaggle docs).
 
 **Where it goes.** The code reads this exact layout (relative to the project root):
 
