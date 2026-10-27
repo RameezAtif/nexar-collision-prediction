@@ -173,21 +173,36 @@ The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create e
 
 The `.kaggle` folder is `C:\Users\YOUR_NAME\.kaggle\` on Windows and `~/.kaggle/` on macOS and Linux. It lives in your home folder, outside this repository; never commit it.
 
+**Steps for CLI 2.x** (nothing below needs editing; the token is taken from your clipboard, so no command contains a placeholder that could overwrite your real token):
+
+1. Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token**, and **copy the token** (it is shown only once).
+2. Save it as the file `access_token` in your `.kaggle` folder:
+
+   ```powershell
+   # Windows PowerShell
+   mkdir "$HOME\.kaggle" -Force
+   Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
+   ```
+
+   ```bash
+   # macOS
+   mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
+   # Linux: mkdir -p ~/.kaggle, then paste the token into the file with: nano ~/.kaggle/access_token
+   ```
+
+   Alternatively, for the current PowerShell window only: `$env:KAGGLE_API_TOKEN = Get-Clipboard`.
+
+**If `kaggle --version` says 1.x** (or you see `OSError: Could not find kaggle.json`), your token is the new kind but the CLI is the old one. Install CLI 2.x in a separate Python 3.11+ environment (kept outside the repo) and use it for the download commands:
+
 ```powershell
-# Windows PowerShell, CLI 2.x: save the token once ...
-mkdir $HOME\.kaggle -Force
-Set-Content -Path $HOME\.kaggle\access_token -Value "PASTE_YOUR_TOKEN_HERE" -NoNewline
-# ... or set it for the current window only
-$env:KAGGLE_API_TOKEN = "PASTE_YOUR_TOKEN_HERE"
+# Windows PowerShell
+py -3.13 -m venv "$HOME\kvenv"
+& "$HOME\kvenv\Scripts\pip" install kaggle
+& "$HOME\kvenv\Scripts\kaggle" --version        # should say 2.x
+& "$HOME\kvenv\Scripts\kaggle" competitions download -c nexar-collision-prediction -f train.csv -p data/raw
 ```
 
-```bash
-# macOS / Linux, CLI 2.x
-mkdir -p ~/.kaggle && printf '%s' "PASTE_YOUR_TOKEN_HERE" > ~/.kaggle/access_token
-# CLI 1.x instead: save the downloaded kaggle.json to ~/.kaggle/kaggle.json, then: chmod 600 ~/.kaggle/kaggle.json
-```
-
-If you see `OSError: Could not find kaggle.json`, you have CLI 1.x and a new-style token. Install CLI 2.x in a Python 3.11+ environment (for example `py -3.13 -m venv kvenv`, activate it, then `pip install kaggle`) and run the commands again from that window, or use a `kaggle.json` with the old CLI. You must also have accepted the competition rules on the Kaggle page above.
+(Use `& "$HOME\kvenv\Scripts\kaggle"` wherever the commands above say `kaggle`.) The other option is the old CLI with a legacy `kaggle.json` in the `.kaggle` folder. You must also have accepted the competition rules on the Kaggle page above.
 
 **Where it goes.** The code reads this exact layout (relative to the project root):
 
