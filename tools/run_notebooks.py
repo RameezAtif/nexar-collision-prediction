@@ -11,6 +11,7 @@ Usage (from the project root):
 
 Notebooks 06-09 use only the committed, cached features in data/processed/ (no raw videos, no GPU). Together they take about 5 minutes on a CPU.
 Notebooks 01-05 need the raw Nexar videos in data/raw/ (see README, "Data"); run them by name if you have the data.
+There is no per-cell time limit (the optical-flow cell of notebook 04 runs for hours); use --timeout SECONDS to set one.
 All random seeds are set inside the notebooks (42 for splits and sampling; 42-46 for training seeds), so a rerun reproduces the committed result files.
 """
 
@@ -42,7 +43,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("notebooks", nargs="*", help="notebook names without .ipynb (default: 06_temporal_ablation 07 08 09)")
     parser.add_argument("--list", action="store_true", help="list notebooks and their requirements")
-    parser.add_argument("--timeout", type=int, default=3600, help="per-cell timeout in seconds")
+    parser.add_argument("--timeout", type=int, default=0, help="per-cell timeout in seconds (default 0 = no limit)")
     args = parser.parse_args()
 
     if not NOTEBOOK_DIR.is_dir():
