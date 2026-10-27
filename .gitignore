@@ -11,6 +11,7 @@ __pycache__/
 
 # Virtual environment
 .venv/
+.venv-kaggle/
 venv/
 
 # Model outputs

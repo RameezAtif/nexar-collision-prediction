@@ -18,8 +18,6 @@ import shutil
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 RAW = Path("data/raw")
 SMOKE_IDS = [0, 3, 13, 14, 24, 1040, 1041, 1042, 1043, 1045, 1046, 1734]  # 5 collision, 7 normal
 FEATURES = Path("data/processed/cnn_features")
@@ -59,6 +57,8 @@ def main() -> int:
     if full.exists():
         print(f"{full} already exists, so {csv} is probably already trimmed. Run --restore first.")
         return 1
+    import pandas as pd
+
     labels = pd.read_csv(csv)
     shutil.copy(csv, full)
     small = labels[labels["id"].isin(SMOKE_IDS)]
