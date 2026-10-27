@@ -156,14 +156,18 @@ The downloads need the Kaggle command-line tool and a login: see [Data](#data).
 ## Data
 
 The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
-**Get the data** (only notebooks 01-05 and the quick test need it; the main results reproduce without it). Accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data), then use the Kaggle command-line tool, **version 2.x**. It needs Python 3.11 or newer; check with `kaggle --version`. Setup details are in [Kaggle's instructions](https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md).
+**Get the data** (only notebooks 01-05 and the quick test need it; the main results reproduce without it). Both ways start on the [Kaggle competition page](https://www.kaggle.com/competitions/nexar-collision-prediction/data), where you accept the rules.
+
+**Everything, in the browser.** On that page click **Download All**. It is a zip of about 31 GB, so you need about twice that much free disk space to unzip it. Unzip it into `data/raw/` so that you get `data/raw/train.csv` and `data/raw/train/00000.mp4`, and so on. Then run `python tools/check_data.py` to confirm.
+
+**Or with the command line** (also for a partial download, such as the 12-video quick test). Use the Kaggle command-line tool, **version 2.x**. It needs Python 3.11 or newer; check with `kaggle --version`. Setup details are in [Kaggle's instructions](https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md).
 
 ```bash
 pip install kaggle
 kaggle auth login        # opens your browser, once
 kaggle competitions download -c nexar-collision-prediction -f train.csv -p data/raw
 kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p data/raw   # one video; repeat per id
-kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition (about 31 GB, includes test videos); unzip so the videos end up in data/raw/train/
+kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition, same zip as Download All
 ```
 
 For the 12-video quick test, `python tools/make_smoke_set.py --commands` prints the exact download commands.
