@@ -61,6 +61,24 @@ python tools/run_notebooks.py      # reproduces all results (notebooks 06–09),
 
 No raw videos are needed for this: the split, clip definitions and cached features are committed in `data/processed/`.
 
+## Step-by-step: rebuilding from the raw videos
+
+The quick start reuses the committed features. To rebuild everything from the Nexar videos, follow these steps. Do this in a separate clone if you want to keep the committed files untouched, because the notebooks overwrite them.
+
+1. **Install.** Clone the repo and install the requirements, as in the quick start.
+2. **Download the data.** Accept the Kaggle competition rules, then fetch `train.csv` and the training videos into `data/raw/` (commands and exact layout in [Data](#data)).
+3. **Check it.** Run `python tools/check_data.py`. You want `videos found: 1500 of 1500 labelled` and `Complete set.`
+4. **Optional: re-extract the ResNet features.** Notebook 05 reuses `data/processed/cnn_features/*.npy` if they exist. Delete them to compute the features again.
+5. **Rebuild the inputs and the original models** (slow: hours on a CPU; the optical-flow notebook prints nothing until it finishes):
+   ```bash
+   python tools/run_notebooks.py 03_clip_sampling 04_baselines 05_learned_temporal_model
+   ```
+6. **Regenerate the reported results** (about 5 minutes):
+   ```bash
+   python tools/run_notebooks.py
+   ```
+7. **See what changed.** `git status` and `git diff --stat` list the files that differ from the committed ones. Expect small numerical differences across machines and library versions.
+
 ## Commands
 
 | Command | What it does | Needs raw data |
