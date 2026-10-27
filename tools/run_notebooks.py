@@ -11,6 +11,7 @@ Usage (from the project root):
 
 Notebooks 06-09 use only the committed, cached features in data/processed/ (no raw videos, no GPU). Together they take about 5 minutes on a CPU.
 Notebooks 01-05 need the raw Nexar videos in data/raw/ (see README, "Data"); run them by name if you have the data.
+They have no per-cell time limit (the optical-flow cell of notebook 04 runs for hours); use --timeout SECONDS to set one.
 All random seeds are set inside the notebooks (42 for splits and sampling; 42-46 for training seeds), so a rerun reproduces the committed result files.
 """
 
@@ -36,13 +37,15 @@ NEEDS = {
     "08_failure_analysis": "committed data only; ~2 min",
     "09_id_block_confound": "committed data only; ~1 min",
 }
+RAW = ["01_dataset_exploration", "02_video_inspection", "03_clip_sampling", "04_baselines", "05_learned_temporal_model"]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("notebooks", nargs="*", help="notebook names without .ipynb (default: 06_temporal_ablation 07 08 09)")
     parser.add_argument("--list", action="store_true", help="list notebooks and their requirements")
-    parser.add_argument("--timeout", type=int, default=3600, help="per-cell timeout in seconds")
+    parser.add_argument("--timeout", type=int, default=None,
+                        help="per-cell timeout in seconds; 0 = no limit (default: 3600, but no limit for notebooks 01-05, which take hours)")
     args = parser.parse_args()
 
     if not NOTEBOOK_DIR.is_dir():
@@ -62,7 +65,8 @@ def main() -> int:
         nb = nbformat.read(path, as_version=4)
         start = time.time()
         print(f"running {name} ...", flush=True)
-        NotebookClient(nb, timeout=args.timeout, kernel_name="python3", resources={"metadata": {"path": "."}}).execute()
+        timeout = args.timeout if args.timeout is not None else (0 if name in RAW else 3600)
+        NotebookClient(nb, timeout=timeout, kernel_name="python3", resources={"metadata": {"path": "."}}).execute()
         nbformat.write(nb, path)
         print(f"  done in {(time.time() - start) / 60:.1f} min", flush=True)
     return 0
