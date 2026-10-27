@@ -92,6 +92,8 @@ python tools/make_smoke_set.py --restore     # puts the full train.csv back
 
 The 12 videos are the smallest set that works: notebook 03 needs about 10 videos for its stratified 80/20 split, and notebook 05 has a demo cell that looks up video 01734 in the training clips. Only notebooks 01–05 are meant for this set; the results (AP and so on) are meaningless on 12 videos, and notebooks 06–09 need the committed full-size data.
 
+The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kaggle-credentials).
+
 ## Commands
 
 | Command | What it does | Needs raw data |
@@ -164,6 +166,7 @@ kaggle competitions download -c nexar-collision-prediction -p data/raw   # the w
 
 The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create exactly the layout below. They need a Kaggle login, set up as follows.
 
+<a id="kaggle-credentials"></a>
 **Kaggle credentials.** Which file the CLI reads depends on its version (`kaggle --version`):
 
 | Kaggle CLI | Needs Python | Credentials it reads |
