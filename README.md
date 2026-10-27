@@ -156,56 +156,66 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 ## Data
 
 The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
-**Get the data.** Accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data), then download `train.csv` and the `train/` videos, for example with the [Kaggle CLI](https://github.com/Kaggle/kaggle-api):
-
-```bash
-kaggle competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p data/raw   # one video; repeat per id
-kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition (about 31 GB, includes test videos); unzip so the videos end up in data/raw/train/
-```
-
-The first two commands were run with Kaggle CLI 2.2.5 (Python 3.13) and create exactly the layout below. They need a Kaggle login, set up as follows.
+**Get the data** in three steps. First accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data).
 
 <a id="kaggle-credentials"></a>
-**Kaggle credentials.** Which file the CLI reads depends on its version (`kaggle --version`):
+**Step 1: a Kaggle token (one-off).** Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token** and **copy it** (it is shown once). Then save it from your clipboard, so there is nothing to edit:
 
-| Kaggle CLI | Needs Python | Credentials it reads |
-|---|---|---|
-| **2.x** (we used 2.2.5) | 3.11 or newer | A token from [kaggle.com/settings/api](https://www.kaggle.com/settings/api) ("Generate New Token"): either the environment variable `KAGGLE_API_TOKEN`, or the token saved as the only content of the file `access_token` in your `.kaggle` folder |
-| **1.x** (what `pip install kaggle` installs on Python 3.10) | 3.10 or older | The older `kaggle.json` file in your `.kaggle` folder, containing `{"username": "YOUR_USERNAME", "key": "YOUR_KEY"}`. It does **not** read the new token |
+```powershell
+# Windows PowerShell
+mkdir "$HOME\.kaggle" -Force
+Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
+```
 
-The `.kaggle` folder is `C:\Users\YOUR_NAME\.kaggle\` on Windows and `~/.kaggle/` on macOS and Linux. It lives in your home folder, outside this repository; never commit it.
+```bash
+# macOS (Linux: after mkdir, paste the token into ~/.kaggle/access_token with nano)
+mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
+```
 
-**Steps for CLI 2.x** (nothing below needs editing; the token is taken from your clipboard, so no command contains a placeholder that could overwrite your real token):
+The `.kaggle` folder lives in your home folder (`C:\Users\YOUR_NAME\.kaggle` on Windows, `~/.kaggle` on macOS and Linux), outside this repository. Never commit it.
 
-1. Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token**, and **copy the token** (it is shown only once).
-2. Save it as the file `access_token` in your `.kaggle` folder:
-
-   ```powershell
-   # Windows PowerShell
-   mkdir "$HOME\.kaggle" -Force
-   Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
-   ```
-
-   ```bash
-   # macOS
-   mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
-   # Linux: mkdir -p ~/.kaggle, then paste the token into the file with: nano ~/.kaggle/access_token
-   ```
-
-   Alternatively, for the current PowerShell window only: `$env:KAGGLE_API_TOKEN = Get-Clipboard`.
-
-**If `kaggle --version` says 1.x** (or you see `OSError: Could not find kaggle.json`), your token is the new kind but the CLI is the old one. Install CLI 2.x in a separate Python 3.11+ environment (kept outside the repo) and use it for the download commands:
+**Step 2: the Kaggle command, version 2.x.** Run `kaggle --version`. If it says 1.x (or you later see `Could not find kaggle.json`), install 2.x next to it. It needs Python 3.11 or newer and does not touch this repository:
 
 ```powershell
 # Windows PowerShell
 py -3.13 -m venv "$HOME\kvenv"
 & "$HOME\kvenv\Scripts\pip" install kaggle
-& "$HOME\kvenv\Scripts\kaggle" --version        # should say 2.x
-& "$HOME\kvenv\Scripts\kaggle" competitions download -c nexar-collision-prediction -f train.csv -p data/raw
 ```
 
-(Use `& "$HOME\kvenv\Scripts\kaggle"` wherever the commands above say `kaggle`.) The other option is the old CLI with a legacy `kaggle.json` in the `.kaggle` folder. You must also have accepted the competition rules on the Kaggle page above.
+```bash
+# macOS / Linux
+python3 -m venv ~/kvenv && ~/kvenv/bin/pip install kaggle
+```
+
+<details>
+<summary>Prefer the old Kaggle CLI (1.x)?</summary>
+
+The 1.x command (what `pip install kaggle` gives on Python 3.10 or older) cannot read the new token. It needs a legacy `kaggle.json` in the `.kaggle` folder, containing `{"username": "YOUR_USERNAME", "key": "YOUR_KEY"}` (on macOS and Linux also run `chmod 600 ~/.kaggle/kaggle.json`). Installing 2.x as above is simpler.
+</details>
+
+**Step 3: download.** For the 12-video quick test (about 190 MB), paste this from the project root:
+
+```powershell
+# Windows PowerShell (use $k = "kaggle" instead if your kaggle is already 2.x)
+$k = "$HOME\kvenv\Scripts\kaggle.exe"
+& $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+foreach ($i in "00000","00003","00013","00014","00024","01040","01041","01042","01043","01045","01046","01734") { & $k competitions download -c nexar-collision-prediction -f "train/$i.mp4" -p data/raw }
+```
+
+```bash
+# macOS / Linux (use k=kaggle instead if your kaggle is already 2.x)
+k=~/kvenv/bin/kaggle
+$k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+for i in 00000 00003 00013 00014 00024 01040 01041 01042 01043 01045 01046 01734; do $k competitions download -c nexar-collision-prediction -f train/$i.mp4 -p data/raw; done
+```
+
+For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) and unzip it so the videos end up in `data/raw/train/`:
+
+```bash
+kaggle competitions download -c nexar-collision-prediction -p data/raw
+```
+
+These commands were run with Kaggle CLI 2.2.5 and create exactly the layout below.
 
 **Where it goes.** The code reads this exact layout (relative to the project root):
 
