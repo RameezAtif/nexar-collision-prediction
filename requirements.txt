@@ -22,3 +22,5 @@ torchvision>=0.18
 jupyterlab>=4.0
 ipykernel>=6.29
 nbclient>=0.10     # only needed to execute notebooks from the command line
+
+# Optional, only for tools/scene_content_check.py (tested with 5.20.2):  pip install transformers
