@@ -92,7 +92,7 @@ python tools/make_smoke_set.py --restore     # puts the full train.csv back
 
 The 12 videos are the smallest set that works: notebook 03 needs about 10 videos for its stratified 80/20 split, and notebook 05 has a demo cell that looks up video 01734 in the training clips. Only notebooks 01–05 are meant for this set; the results (AP and so on) are meaningless on 12 videos, and notebooks 06–09 need the committed full-size data.
 
-The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kaggle-credentials).
+The downloads need the Kaggle command-line tool and a login: see [Data](#data).
 
 ## Commands
 
@@ -156,66 +156,17 @@ The downloads need a Kaggle login: see [how to set up your Kaggle API key](#kagg
 ## Data
 
 The raw Nexar videos (about 31 GB; 25.5 GB of training videos) are **not** in this repository. Only notebooks 01–05 and `tools/compare_id_blocks.py` need them.
-**Get the data** in three steps (you only need this for notebooks 01-05 and the quick test; the main results reproduce without it). First accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data). Use one terminal window for all three steps.
+**Get the data** (only notebooks 01-05 and the quick test need it; the main results reproduce without it). Accept the rules of the [Kaggle competition](https://www.kaggle.com/competitions/nexar-collision-prediction/data), then use the Kaggle command-line tool, **version 2.x**. It needs Python 3.11 or newer; check with `kaggle --version`. Setup details are in [Kaggle's instructions](https://github.com/Kaggle/kaggle-api/blob/main/docs/README.md).
 
-<a id="kaggle-credentials"></a>
-1. **Install the Kaggle command in its own environment.** It needs Python 3.11 or newer. A separate environment avoids any older Kaggle install on your computer, and the variable `$k` makes every later step use this copy:
+```bash
+pip install kaggle
+kaggle auth login        # opens your browser, once
+kaggle competitions download -c nexar-collision-prediction -f train.csv -p data/raw
+kaggle competitions download -c nexar-collision-prediction -f train/00822.mp4 -p data/raw   # one video; repeat per id
+kaggle competitions download -c nexar-collision-prediction -p data/raw   # the whole competition (about 31 GB, includes test videos); unzip so the videos end up in data/raw/train/
+```
 
-   ```powershell
-   # Windows PowerShell  (py -3.13 can be any Python 3.11+, for example py -3.12)
-   py -3.13 -m venv "$HOME\kvenv"
-   & "$HOME\kvenv\Scripts\pip" install kaggle
-   $k = "$HOME\kvenv\Scripts\kaggle.exe"
-   ```
-
-   ```bash
-   # macOS / Linux
-   python3 -m venv ~/kvenv && ~/kvenv/bin/pip install kaggle
-   k=~/kvenv/bin/kaggle
-   ```
-
-2. **Log in once.** This opens your browser:
-
-   ```powershell
-   & $k auth login        # macOS / Linux: $k auth login
-   ```
-
-   <details>
-   <summary>Browser login not working? Use a token instead</summary>
-
-   Open [kaggle.com/settings/api](https://www.kaggle.com/settings/api), click **Generate New Token** and **copy it** (shown once). Then save it from your clipboard, so there is nothing to edit:
-
-   ```powershell
-   # Windows PowerShell
-   mkdir "$HOME\.kaggle" -Force
-   Get-Clipboard | Set-Content -Path "$HOME\.kaggle\access_token" -NoNewline
-   ```
-
-   ```bash
-   # macOS (Linux: after mkdir, paste the token into ~/.kaggle/access_token with nano)
-   mkdir -p ~/.kaggle && pbpaste > ~/.kaggle/access_token
-   ```
-
-   The `.kaggle` folder is in your home folder (`C:\Users\YOUR_NAME\.kaggle` on Windows), outside this repository; never commit it.
-   </details>
-
-3. **Download.** For the 12-video quick test (about 190 MB), paste this from the project root:
-
-   ```powershell
-   # Windows PowerShell  (new window? repeat the $k = ... line from step 1 first)
-   & $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-   foreach ($i in "00000","00003","00013","00014","00024","01040","01041","01042","01043","01045","01046","01734") { & $k competitions download -c nexar-collision-prediction -f "train/$i.mp4" -p data/raw }
-   ```
-
-   ```bash
-   # macOS / Linux  (new window? repeat the k=... line from step 1 first)
-   $k competitions download -c nexar-collision-prediction -f train.csv -p data/raw
-   for i in 00000 00003 00013 00014 00024 01040 01041 01042 01043 01045 01046 01734; do $k competitions download -c nexar-collision-prediction -f train/$i.mp4 -p data/raw; done
-   ```
-
-   For all 1,500 training videos (about 25.5 GB), repeat the loop over every id in `data/raw/train.csv`, or download the whole competition (about 31 GB, includes the test videos) with `$k competitions download -c nexar-collision-prediction -p data/raw` and unzip it so the videos end up in `data/raw/train/`.
-
-If you see `Could not find kaggle.json`, you ran an older Kaggle command found on your PATH: use `$k` (the environment from step 1) instead of plain `kaggle`. These commands were run with Kaggle CLI 2.2.5 and create exactly the layout below.
+For the 12-video quick test, `python tools/make_smoke_set.py --commands` prints the exact download commands.
 
 **Where it goes.** The code reads this exact layout (relative to the project root):
 
